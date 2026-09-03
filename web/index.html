@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lunacia Deep — Prototype</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <h1>⛏️ Lunacia Deep</h1>
+      <span class="subtitle">Vibeathon prototype — durability &amp; Fusion Repair loop</span>
+    </div>
+    <div class="wallet">
+      <span class="pill">Ore <b id="ore-balance">0</b></span>
+      <span class="pill">SLP <b id="slp-balance">0</b></span>
+      <button id="reset-btn" class="ghost-btn" title="Wipe local save and start over">Reset</button>
+    </div>
+  </header>
+
+  <section class="banner" id="demo-banner">
+    Demo speeds up shifts to seconds so you can see the full loop. The real design uses
+    8h shifts — see <code>docs/DESIGN.md §1</code>. Nothing about the durability, repair,
+    or Fusion math is compressed — only time.
+  </section>
+
+  <main class="layout">
+    <section class="panel">
+      <h2>Codex <span id="codex-count" class="muted"></span></h2>
+      <div id="codex-grid" class="codex-grid"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Your Tools</h2>
+      <div id="tool-list" class="tool-list"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Nodes</h2>
+      <div id="node-list" class="node-list"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Blind Boxes</h2>
+      <p class="muted small">
+        Uses a local commit&ndash;reveal demo (§7): a seed is hashed and shown
+        <em>before</em> you open, then revealed after so the roll is checkable — same
+        shape as the on-chain flow, no chain required for this prototype.
+      </p>
+      <div id="box-list" class="box-list"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Event Log</h2>
+      <ul id="event-log" class="event-log"></ul>
+    </section>
+  </main>
+
+  <div id="modal-root"></div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
