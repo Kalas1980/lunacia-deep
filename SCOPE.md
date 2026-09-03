@@ -43,6 +43,15 @@ out, and why. Read this before assuming a gap is a bug.
   licence context is right"), this prototype uses only original, non-Axie visuals until
   we've actually registered. Swapping in the kit is a presentation change, not an
   architecture change — see `web/src/data.js` for where model/rarity data lives.
+- **Generated visual art — deliberately lowest priority, and narrow in scope when it
+  happens.** No banners, mascots, or scene art. Only the **30 tool models** (§2.5) get
+  generated art, via Higgsfield or a cheaper alternative (compare cost before committing —
+  per `feedback-higgsfield-credit-conservation` in memory). Style target is "consistent
+  with the Axie IP" — readable as Lunacia Deep's own gear, not a copy of specific
+  copyrighted Axie character art (same non-derivative-design principle already applied to
+  CardChain PH). This isn't blocked on Vibeathon registration: **the Ronin/Axie Builders
+  Program (Appendix A) is the real target** if the Vibeathon window closes, and tool art
+  is useful in that pitch regardless of which door we go through.
 - **Ronin/blockchain integration.** No wallet connect, no on-chain contracts, no real
   tokens. `docs/DESIGN.md` §15 (the validation plan) explicitly calls for this exact kind
   of blockchain-free prototype as Test #1, before any contract or audit spend — this build
