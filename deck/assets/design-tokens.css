@@ -1,0 +1,59 @@
+/* Design Tokens - Auto-generated */
+/* Do not edit directly - modify tokens.json instead */
+
+/* === PRIMITIVES === */
+:root {
+  --primitive-color-navy-600: #2a3550;
+  --primitive-color-navy-700: #1e2740;
+  --primitive-color-navy-800: #171e2e;
+  --primitive-color-navy-900: #0f1420;
+  --primitive-color-navy-950: #0b0f18;
+  --primitive-color-blue-400: #6ea8ff;
+  --primitive-color-blue-500: #4a86e8;
+  --primitive-color-green-500: #4ade80;
+  --primitive-color-yellow-500: #facc15;
+  --primitive-color-red-400: #f87171;
+  --primitive-color-red-500: #ff4d4d;
+  --primitive-color-rarity-common: #cbd5e1;
+  --primitive-color-rarity-rare: #60a5fa;
+  --primitive-color-rarity-epic: #c084fc;
+  --primitive-color-rarity-mystic: #fb923c;
+  --primitive-color-text: #e7ecf7;
+  --primitive-color-muted: #8b96b3;
+  --primitive-color-white: #ffffff;
+  --primitive-spacing-2: 0.5rem;
+  --primitive-spacing-3: 0.75rem;
+  --primitive-spacing-4: 1rem;
+  --primitive-spacing-6: 1.5rem;
+  --primitive-spacing-8: 2rem;
+  --primitive-spacing-12: 3rem;
+  --primitive-spacing-16: 4rem;
+  --primitive-fontSize-sm: 0.875rem;
+  --primitive-fontSize-base: 1rem;
+  --primitive-fontSize-lg: 1.25rem;
+  --primitive-fontSize-xl: 1.75rem;
+  --primitive-fontSize-2xl: 2.5rem;
+  --primitive-fontSize-3xl: 3.5rem;
+  --primitive-radius-md: 0.5rem;
+  --primitive-radius-lg: 0.75rem;
+  --primitive-radius-full: 9999px;
+}
+
+/* === SEMANTIC === */
+:root {
+  --color-background: #0f1420;
+  --color-surface: #171e2e;
+  --color-surface-raised: #1e2740;
+  --color-border: #2a3550;
+  --color-foreground: #e7ecf7;
+  --color-muted-foreground: #8b96b3;
+  --color-primary: #6ea8ff;
+  --color-success: #4ade80;
+  --color-warning: #facc15;
+  --color-danger: #ff4d4d;
+}
+
+/* === COMPONENTS === */
+:root {
+
+}

@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lunacia Deep — Vibeathon Round 1</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+/* Design Tokens (embedded for standalone HTML) */
+:root {
+  --primitive-color-navy-600: #2a3550;
+  --primitive-color-navy-700: #1e2740;
+  --primitive-color-navy-800: #171e2e;
+  --primitive-color-navy-900: #0f1420;
+  --primitive-color-navy-950: #0b0f18;
+  --primitive-color-blue-400: #6ea8ff;
+  --primitive-color-blue-500: #4a86e8;
+  --primitive-color-green-500: #4ade80;
+  --primitive-color-yellow-500: #facc15;
+  --primitive-color-red-400: #f87171;
+  --primitive-color-red-500: #ff4d4d;
+  --primitive-color-rarity-common: #cbd5e1;
+  --primitive-color-rarity-rare: #60a5fa;
+  --primitive-color-rarity-epic: #c084fc;
+  --primitive-color-rarity-mystic: #fb923c;
+  --primitive-color-text: #e7ecf7;
+  --primitive-color-muted: #8b96b3;
+  --primitive-color-white: #ffffff;
+  --primitive-spacing-2: 0.5rem;
+  --primitive-spacing-3: 0.75rem;
+  --primitive-spacing-4: 1rem;
+  --primitive-spacing-6: 1.5rem;
+  --primitive-spacing-8: 2rem;
+  --primitive-spacing-12: 3rem;
+  --primitive-spacing-16: 4rem;
+  --primitive-fontSize-sm: 0.875rem;
+  --primitive-fontSize-base: 1rem;
+  --primitive-fontSize-lg: 1.25rem;
+  --primitive-fontSize-xl: 1.75rem;
+  --primitive-fontSize-2xl: 2.5rem;
+  --primitive-fontSize-3xl: 3.5rem;
+  --primitive-radius-md: 0.5rem;
+  --primitive-radius-lg: 0.75rem;
+  --primitive-radius-full: 9999px;
+  --color-background: #0f1420;
+  --color-surface: #171e2e;
+  --color-surface-raised: #1e2740;
+  --color-border: #2a3550;
+  --color-foreground: #e7ecf7;
+  --color-muted-foreground: #8b96b3;
+  --color-primary: #6ea8ff;
+  --color-success: #4ade80;
+  --color-warning: #facc15;
+  --color-danger: #ff4d4d;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow: hidden;
+}
+h1, h2, h3 { font-family: inherit; font-weight: 700; }
+
+.slide-deck {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+@media (min-width: 769px) {
+  .slide-deck {
+    max-width: calc(100vh * 16 / 9);
+    max-height: calc(100vw * 9 / 16);
+    margin: auto;
+    position: absolute;
+    inset: 0;
+  }
+}
+
+.slide {
+  position: absolute;
+  width: 100%; height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 64px 80px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.35s ease;
+  background:
+    radial-gradient(ellipse at top right, rgba(110,168,255,0.08), transparent 55%),
+    var(--color-background);
+  overflow: hidden;
+}
+.slide.active { opacity: 1; visibility: visible; }
+
+.slide-content {
+  width: 100%;
+  max-width: 1040px;
+  max-height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+}
+.slide-content.wide { max-width: 1160px; }
+
+.eyebrow {
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  font-weight: 700;
+}
+.slide-title {
+  font-size: clamp(32px, 5.2vw, 64px);
+  line-height: 1.08;
+  background: linear-gradient(135deg, #e7ecf7, #6ea8ff 70%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.slide-sub {
+  font-size: clamp(15px, 1.6vw, 20px);
+  color: var(--color-muted-foreground);
+  max-width: 700px;
+  line-height: 1.5;
+}
+h2.head {
+  font-size: clamp(24px, 3.2vw, 38px);
+  line-height: 1.15;
+}
+p.body { font-size: clamp(14px, 1.4vw, 17px); color: var(--color-muted-foreground); line-height: 1.55; max-width: 720px; }
+
+/* ---- shared card look, matches the actual game UI ---- */
+.card {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 16px;
+  text-align: left;
+}
+.tag {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  display: inline-block;
+}
+.tag.common { color: var(--primitive-color-rarity-common); }
+.tag.rare { color: var(--primitive-color-rarity-rare); }
+.tag.epic { color: var(--primitive-color-rarity-epic); }
+.tag.mystic { color: var(--primitive-color-rarity-mystic); }
+.tag.broken { color: var(--color-danger); border-color: var(--color-danger); }
+
+/* ---- layout helpers ---- */
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; width: 100%; }
+.flow { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; width: 100%; }
+.flow-step {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  min-width: 130px;
+}
+.flow-arrow { color: var(--color-primary); font-size: 1.3rem; }
+
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; width: 100%; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; width: 100%; }
+
+.codex-mini { display: grid; grid-template-columns: repeat(10, 1fr); gap: 5px; width: 100%; max-width: 760px; }
+.codex-chip { aspect-ratio: 1; border-radius: 5px; border: 1px solid var(--color-border); }
+.codex-chip.common { background: color-mix(in srgb, var(--primitive-color-rarity-common) 30%, var(--color-surface)); border-color: var(--primitive-color-rarity-common); }
+.codex-chip.rare { background: color-mix(in srgb, var(--primitive-color-rarity-rare) 30%, var(--color-surface)); border-color: var(--primitive-color-rarity-rare); }
+.codex-chip.epic { background: color-mix(in srgb, var(--primitive-color-rarity-epic) 30%, var(--color-surface)); border-color: var(--primitive-color-rarity-epic); }
+.codex-chip.mystic { background: color-mix(in srgb, var(--primitive-color-rarity-mystic) 30%, var(--color-surface)); border-color: var(--primitive-color-rarity-mystic); }
+
+.metric { text-align: center; }
+.metric .num { font-size: clamp(28px, 4vw, 44px); font-weight: 800; color: var(--color-primary); line-height: 1; }
+.metric .lbl { font-size: 0.78rem; color: var(--color-muted-foreground); margin-top: 6px; }
+
+table.cmp { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+table.cmp th, table.cmp td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--color-border); }
+table.cmp th { color: var(--color-muted-foreground); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+
+.durbar-track { height: 10px; border-radius: 999px; background: #0b1220; border: 1px solid var(--color-border); overflow: hidden; }
+.durbar-fill { height: 100%; }
+
+.chart-wrap { width: min(90%, 640px); height: clamp(220px, 34vh, 320px); }
+
+.progress-bar { position: fixed; top: 0; left: 0; height: 3px; background: var(--color-primary); transition: width 0.3s; z-index: 1000; }
+.nav-controls { position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 18px; z-index: 1000; }
+.nav-btn { background: rgba(255,255,255,0.08); border: 1px solid var(--color-border); color: var(--color-foreground); width: 38px; height: 38px; border-radius: 50%; cursor: pointer; font-size: 16px; }
+.nav-btn:hover { background: rgba(255,255,255,0.16); }
+.slide-counter { color: var(--color-muted-foreground); font-size: 13px; font-variant-numeric: tabular-nums; }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.animate-stagger > * { opacity: 0; animation: fadeUp 0.5s ease-out forwards; }
+.animate-stagger > *:nth-child(1) { animation-delay: 0.05s; }
+.animate-stagger > *:nth-child(2) { animation-delay: 0.13s; }
+.animate-stagger > *:nth-child(3) { animation-delay: 0.21s; }
+.animate-stagger > *:nth-child(4) { animation-delay: 0.29s; }
+.animate-stagger > *:nth-child(5) { animation-delay: 0.37s; }
+
+@media (max-width: 768px) {
+  .slide { padding: 32px 22px; }
+  .split { grid-template-columns: 1fr; }
+  .grid-3, .grid-4 { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+<div class="progress-bar" id="progressBar"></div>
+<div class="slide-deck">
+
+  <!-- 1: TITLE -->
+  <div class="slide active">
+    <div class="slide-content animate-stagger">
+      <div class="eyebrow">⛏️ Axie Vibeathon · Round 1</div>
+      <h1 class="slide-title">Lunacia Deep</h1>
+      <p class="slide-sub">An idle mining game on Ronin where your Axies' tools can genuinely break —
+      and getting that wrong costs you a second tool, not just SLP.</p>
+      <p style="color:var(--color-muted-foreground); font-size:0.85rem;">Built with Claude · Working prototype, not a mockup</p>
+    </div>
+  </div>
+
+  <!-- 2: HOOK / PROBLEM -->
+  <div class="slide">
+    <div class="slide-content animate-stagger">
+      <div class="eyebrow">The Problem</div>
+      <h2 class="head">Most idle mining games have one button: <em>wait</em>.</h2>
+      <p class="body">Durability in the genre is usually decoration — a bar that ticks down and gets
+      topped back up with a tap. There's no decision in it, no risk, nothing to actually manage.</p>
+      <p class="body" style="color:var(--color-foreground); font-weight:600;">
+      Lunacia Deep makes durability the whole game.</p>
+    </div>
+  </div>
+
+  <!-- 3: CORE LOOP -->
+  <div class="slide">
+    <div class="slide-content wide animate-stagger">
+      <div class="eyebrow">The Core Loop</div>
+      <h2 class="head">Real Axies. Real tools. Real wear.</h2>
+      <div class="flow" style="margin-top:12px;">
+        <div class="flow-step">Assign Axies<br>+ Tool</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">Mining Shift<br>(durability drains)</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">Collect Ore<br>→ AXS / RON / SLP</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">Repair — or<br>risk it</div>
+      </div>
+      <p class="body">Axies are labor, tools are capital. Every class has a mining role (§3), and
+      every tool tier has a real reason to be repaired, not replaced.</p>
+    </div>
+  </div>
+
+  <!-- 4: THE MECHANIC -->
+  <div class="slide">
+    <div class="slide-content wide">
+      <div class="eyebrow">The Mechanic That Makes It a Game</div>
+      <h2 class="head">Zero durability isn't an inconvenience. It's a wall.</h2>
+      <div class="split" style="margin-top:8px;">
+        <div>
+          <div class="chart-wrap"><canvas id="repairChart"></canvas></div>
+        </div>
+        <div style="text-align:left;">
+          <p class="body" style="margin-bottom:14px;">SLP repair works between 1 and 100 durability —
+          success chance falls the emptier you run it. Let it hit exactly <b>0</b> and the tool goes
+          <span class="tag broken" style="margin:0 4px;">BROKEN</span>. SLP can't save it at any price.</p>
+          <p class="body">The only way back: <b>Fusion Repair</b> — burn a second same-rarity tool as
+          fuel for a deterministic partial restore. Every player, at every tier, has to actually watch
+          this number.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5: CODEX -->
+  <div class="slide">
+    <div class="slide-content wide animate-stagger">
+      <div class="eyebrow">The Chase</div>
+      <h2 class="head">30 Tools. One Codex. A Reason to Come Back.</h2>
+      <div class="codex-mini">
+        <!-- 10 common -->
+        <div class="codex-chip common"></div><div class="codex-chip common"></div><div class="codex-chip common"></div><div class="codex-chip common"></div><div class="codex-chip common"></div><div class="codex-chip common"></div><div class="codex-chip common"></div><div class="codex-chip common"></div><div class="codex-chip common"></div><div class="codex-chip common"></div>
+        <!-- 10 rare -->
+        <div class="codex-chip rare"></div><div class="codex-chip rare"></div><div class="codex-chip rare"></div><div class="codex-chip rare"></div><div class="codex-chip rare"></div><div class="codex-chip rare"></div><div class="codex-chip rare"></div><div class="codex-chip rare"></div><div class="codex-chip rare"></div><div class="codex-chip rare"></div>
+        <!-- 5 epic + 5 mystic -->
+        <div class="codex-chip epic"></div><div class="codex-chip epic"></div><div class="codex-chip epic"></div><div class="codex-chip epic"></div><div class="codex-chip epic"></div>
+        <div class="codex-chip mystic"></div><div class="codex-chip mystic"></div><div class="codex-chip mystic"></div><div class="codex-chip mystic"></div><div class="codex-chip mystic"></div>
+      </div>
+      <div class="grid-4" style="max-width:600px; margin-top:6px;">
+        <div class="metric"><div class="num" style="color:var(--primitive-color-rarity-common)">10</div><div class="lbl">Common</div></div>
+        <div class="metric"><div class="num" style="color:var(--primitive-color-rarity-rare)">10</div><div class="lbl">Rare</div></div>
+        <div class="metric"><div class="num" style="color:var(--primitive-color-rarity-epic)">5</div><div class="lbl">Epic</div></div>
+        <div class="metric"><div class="num" style="color:var(--primitive-color-rarity-mystic)">5</div><div class="lbl">Mystic</div></div>
+      </div>
+      <p class="body">Duplicate protection weights every box pull 80% toward models you're missing —
+      the Codex is a grind, not a coupon-collector nightmare.</p>
+    </div>
+  </div>
+
+  <!-- 6: BLIND BOXES / FAIRNESS -->
+  <div class="slide">
+    <div class="slide-content wide">
+      <div class="eyebrow">Feasibility &amp; Trust</div>
+      <h2 class="head">Provably fair, even in a prototype.</h2>
+      <table class="cmp" style="margin-top:8px;">
+        <tr><th>Box</th><th>Common</th><th>Rare</th><th>Epic</th><th>Mystic</th></tr>
+        <tr><td>Basic Crate</td><td>82.0%</td><td>16.5%</td><td>1.4%</td><td>0.1%</td></tr>
+        <tr><td>Prospector's Case</td><td>42.0%</td><td>46.0%</td><td>11.0%</td><td>1.0%</td></tr>
+        <tr><td>Deep Vault</td><td>—</td><td>55.0%</td><td>38.0%</td><td>7.0%</td></tr>
+      </table>
+      <p class="body" style="margin-top:10px;">A seed is hashed and shown <em>before</em> you open the
+      box, revealed <em>after</em> — independently re-hashable by anyone. Same shape as the on-chain
+      commit–reveal flow the full design uses; no chain required to prove the pattern works.</p>
+    </div>
+  </div>
+
+  <!-- 7: REFORGE -->
+  <div class="slide">
+    <div class="slide-content">
+      <div class="eyebrow">The Upgrade Path</div>
+      <h2 class="head">Burn two tools. Maybe get a better one.</h2>
+      <p class="body">Reforge two same-rarity tools into one. Odds scale continuously with the
+      condition of what you feed in — fresh tools upgrade more often, worn ones mostly just match or
+      flaw. Common pairs can genuinely tier up into Rare.</p>
+      <div class="grid-3" style="max-width:640px; margin-top:8px;">
+        <div class="card" style="text-align:center;"><div style="font-size:1.4rem; font-weight:800; color:var(--color-success)">Upgrade</div><div class="lbl" style="color:var(--color-muted-foreground); font-size:0.8rem;">5%→35% by condition</div></div>
+        <div class="card" style="text-align:center;"><div style="font-size:1.4rem; font-weight:800; color:var(--color-primary)">Match</div><div class="lbl" style="color:var(--color-muted-foreground); font-size:0.8rem;">fresh, same rarity</div></div>
+        <div class="card" style="text-align:center;"><div style="font-size:1.4rem; font-weight:800; color:var(--color-warning)">Flaw</div><div class="lbl" style="color:var(--color-muted-foreground); font-size:0.8rem;">born partly worn</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8: AXIE CORE FIT -->
+  <div class="slide">
+    <div class="slide-content wide">
+      <div class="eyebrow">Axie Core Fit</div>
+      <h2 class="head">Built around Axies, not just with them.</h2>
+      <table class="cmp" style="margin-top:8px;">
+        <tr><th>Class</th><th>Mining Role</th><th>Effect</th></tr>
+        <tr><td>Beast, Bug</td><td>Digger</td><td>+12% base ore yield</td></tr>
+        <tr><td>Plant, Reptile</td><td>Bracer</td><td>−20% tool durability drain</td></tr>
+        <tr><td>Aquatic, Bird</td><td>Prospector</td><td>+15% rare-ore find chance</td></tr>
+        <tr><td>Dusk, Mech, Dawn</td><td>Foreman</td><td>+8% to all crew bonuses</td></tr>
+      </table>
+      <p class="body" style="margin-top:10px;">Every one of Axie's classes gets a real mining job —
+      including the cheap, floor-priced Axies sitting idle in millions of wallets today. Axies are the
+      labor; tools are the capital. Neither mines alone.</p>
+    </div>
+  </div>
+
+  <!-- 9: VISION -->
+  <div class="slide">
+    <div class="slide-content wide animate-stagger">
+      <div class="eyebrow">Product Vision</div>
+      <h2 class="head">What's next: Genesis, Ascension, and an economy that can't over-emit</h2>
+      <div class="flow" style="margin-top:6px;">
+        <div class="flow-step">Complete the<br>30-tool Codex</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">Roll for<br>Genesis (100 ever)</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">Ascension keeps<br>the chase alive</div>
+      </div>
+      <p class="body">Full tokenomics already designed: SLP is a closed loop (you can't mint it — repairs
+      fund the reward pool), AXS/RON rewards are bought with real revenue, and pro-rata daily pools make
+      over-emission arithmetically impossible. Two paths into the Axie ecosystem: this Vibeathon, or the
+      Ronin/Axie Builders Program if that window closes.</p>
+    </div>
+  </div>
+
+  <!-- 10: WHAT'S BUILT -->
+  <div class="slide">
+    <div class="slide-content wide">
+      <div class="eyebrow">Prototype &amp; Documentation</div>
+      <h2 class="head">Not a mockup — a working prototype.</h2>
+      <div class="grid-4" style="margin-top:10px;">
+        <div class="metric"><div class="num">16/16</div><div class="lbl">unit tests passing</div></div>
+        <div class="metric"><div class="num">2</div><div class="lbl">real bugs found &amp; fixed via manual testing</div></div>
+        <div class="metric"><div class="num">0</div><div class="lbl">dependencies — vanilla JS</div></div>
+        <div class="metric"><div class="num">6</div><div class="lbl">clean, logical commits</div></div>
+      </div>
+      <div class="card" style="margin-top:16px; width:min(420px,90%);">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;">
+          <b>Hand Shovel</b><span class="tag common">common</span><span class="tag broken">broken</span>
+        </div>
+        <div class="durbar-track" style="margin:10px 0 6px;"><div class="durbar-fill" style="width:0%; background:var(--color-danger);"></div></div>
+        <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--color-muted-foreground);">
+          <span>Durability 0/100</span><span>Repairs: 4</span>
+        </div>
+      </div>
+      <p class="body">The loop above — shift → collect → drain → repair → Broken → Fusion Repair —
+      runs today, in a browser, verified by hand.</p>
+    </div>
+  </div>
+
+  <!-- 11: CLOSING -->
+  <div class="slide">
+    <div class="slide-content animate-stagger">
+      <div class="eyebrow">Round 1</div>
+      <h2 class="head">Bring real stakes to idle mining on Ronin.</h2>
+      <p class="body">Built with Claude (Anthropic) — design, economy math, prototype code, and this
+      deck. Every formula shown here is unit-tested; every mechanic has been played, not just described.</p>
+      <p class="body" style="font-weight:600; color:var(--color-foreground);">Lunacia Deep — Axie
+      Vibeathon Round 1 submission.</p>
+    </div>
+  </div>
+
+</div><!-- /.slide-deck -->
+
+<div class="nav-controls">
+  <button class="nav-btn" onclick="prevSlide()">←</button>
+  <span class="slide-counter"><span id="current">1</span> / <span id="total">11</span></span>
+  <button class="nav-btn" onclick="nextSlide()">→</button>
+</div>
+
+<script>
+let current = 1;
+const total = document.querySelectorAll('.slide').length;
+document.getElementById('total').textContent = total;
+
+function showSlide(n) {
+  if (n < 1) n = 1;
+  if (n > total) n = total;
+  current = n;
+  document.querySelectorAll('.slide').forEach((s, i) => s.classList.toggle('active', i === n - 1));
+  document.getElementById('current').textContent = n;
+  document.getElementById('progressBar').style.width = (n / total * 100) + '%';
+}
+function nextSlide() { showSlide(current + 1); }
+function prevSlide() { showSlide(current - 1); }
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); nextSlide(); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); prevSlide(); }
+});
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.nav-controls')) nextSlide();
+});
+
+showSlide(1);
+
+// Repair success-chance curve (§4.2 formula, repairCount=0, no Flux)
+const durLevels = [90,80,70,60,50,40,30,20,10,1];
+const pSuccess = durLevels.map(d => Math.min(1, Math.max(0.5, 0.95 - 0.30 * ((100 - d) / 100))) * 100);
+new Chart(document.getElementById('repairChart'), {
+  type: 'line',
+  data: {
+    labels: durLevels.map(d => d + '/100'),
+    datasets: [{
+      label: 'Repair success %',
+      data: pSuccess,
+      borderColor: '#6ea8ff',
+      backgroundColor: 'rgba(110,168,255,0.12)',
+      borderWidth: 3,
+      fill: true,
+      tension: 0.3,
+      pointBackgroundColor: '#6ea8ff',
+      pointRadius: 4
+    }, {
+      label: 'BROKEN — Fusion only',
+      data: [...Array(durLevels.length - 1).fill(null), null, ],
+      pointBackgroundColor: '#ff4d4d',
+      pointBorderColor: '#ff4d4d',
+      pointRadius: 0
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      title: { display: true, text: 'Repair success chance as durability falls', color: '#e7ecf7', font: { size: 13 } }
+    },
+    scales: {
+      x: { title: { display: true, text: 'Durability at time of repair', color: '#8b96b3', font: {size: 11} }, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#8b96b3' } },
+      y: { min: 0, max: 100, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#8b96b3', callback: v => v + '%' } }
+    }
+  }
+});
+</script>
+</body>
+</html>
