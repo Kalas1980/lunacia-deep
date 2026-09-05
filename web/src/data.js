@@ -3,12 +3,14 @@
 
 export const RARITIES = ['common', 'rare', 'epic', 'mystic'];
 
-// §2.1 tier table + §4.1 "Repair cost (SLP/pt)" column.
+// §2.1 tier table + §4.1 "Repair cost (SLP/pt)" column. directPriceUSDC is §7's
+// direct-purchase alternative to gambling — priced above box EV on purpose (§14.1: boxes
+// must always win on price) so it's a certainty option, not a cheaper route to the top.
 export const TIER = {
-  common: { yieldMult: 1.00, tierRate: 2, immortal: false },
-  rare: { yieldMult: 1.60, tierRate: 6, immortal: false },
-  epic: { yieldMult: 2.50, tierRate: 16, immortal: true },
-  mystic: { yieldMult: 3.50, tierRate: 30, immortal: true },
+  common: { yieldMult: 1.00, tierRate: 2, immortal: false, directPriceUSDC: 8 },
+  rare: { yieldMult: 1.60, tierRate: 6, immortal: false, directPriceUSDC: 35 },
+  epic: { yieldMult: 2.50, tierRate: 16, immortal: true, directPriceUSDC: 180 },
+  mystic: { yieldMult: 3.50, tierRate: 30, immortal: true, directPriceUSDC: 650 },
 };
 
 export const MAX_DURABILITY_START = 100;

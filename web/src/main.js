@@ -1,4 +1,4 @@
-import { RARITIES, MODELS, TRAITS, BOXES, NODES, DEMO_SHIFT_MS, fusionFee } from './data.js';
+import { RARITIES, MODELS, TRAITS, TIER, BOXES, NODES, DEMO_SHIFT_MS, fusionFee } from './data.js';
 import {
   repairCostSLP, repairSuccessChance, rollRepair, isBroken, isWorn,
   fusionRepair, reforgeOdds, reforge, shiftYield, drainDurability, pickModel,
@@ -9,6 +9,7 @@ import { toolIconSVG, boxIconSVG } from './icons.js';
 
 const RARITY_RANK = { common: 0, rare: 1, epic: 2, mystic: 3 };
 let state = loadState();
+let marketFilter = 'common'; // view-only, not persisted — which rarity tab is open
 
 function roll() {
   return crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296;
@@ -40,6 +41,7 @@ function render() {
   renderTools();
   renderNodes();
   renderBoxes();
+  renderMarketplace();
   renderLog();
 }
 
@@ -47,18 +49,18 @@ function renderCodex() {
   const grid = document.getElementById('codex-grid');
   const owned = new Set(state.tools.map((t) => t.model));
   let ownedCount = 0;
-  const html = [];
-  for (const rarity of RARITIES) {
-    for (const model of MODELS[rarity]) {
+  // Grouped by rarity — three compact rows (10 / 10 / 5+5) instead of one long grid that
+  // interleaves tiers, so it reads at a glance and takes a fraction of the vertical space.
+  const rows = RARITIES.map((rarity) => {
+    const chips = MODELS[rarity].map((model) => {
       const has = owned.has(model);
       if (has) ownedCount += 1;
       const tooltip = `${model} — ${rarity} — ${TRAITS[model] || ''}`;
-      html.push(
-        `<div class="codex-slot ${rarity} ${has ? 'owned' : ''}" ${has ? `title="${tooltip}"` : ''}>${has ? toolIconSVG(model, 20) : '?'}</div>`
-      );
-    }
-  }
-  grid.innerHTML = html.join('');
+      return `<div class="codex-chip ${rarity} ${has ? 'owned' : ''}" ${has ? `title="${tooltip}"` : ''}>${has ? toolIconSVG(model, 18) : '?'}</div>`;
+    }).join('');
+    return `<div class="codex-tier"><span class="codex-tier-label">${rarity}</span><div class="codex-tier-grid">${chips}</div></div>`;
+  }).join('');
+  grid.innerHTML = `<div class="codex-compact">${rows}</div>`;
   const total = RARITIES.reduce((n, r) => n + MODELS[r].length, 0);
   document.getElementById('codex-count').textContent = `${ownedCount} / ${total}`;
   if (ownedCount === total) {
@@ -79,10 +81,10 @@ function renderToolCard(tool) {
   const shift = activeShiftFor(tool.id);
   const broken = isBroken(tool);
   const worn = isWorn(tool);
-  let statusTag = '';
-  if (shift) statusTag = '<span class="tag status-mining">Mining</span>';
-  else if (broken) statusTag = '<span class="tag status-broken">Broken</span>';
-  else if (worn) statusTag = '<span class="tag status-worn">Worn</span>';
+  let statusBadge = '';
+  if (shift) statusBadge = '<span class="status-badge tag status-mining">Mining</span>';
+  else if (broken) statusBadge = '<span class="status-badge tag status-broken">Broken</span>';
+  else if (worn) statusBadge = '<span class="status-badge tag status-worn">Worn</span>';
 
   const durClass = durabilityClass(tool);
   const durPct = Math.max(0, Math.min(100, tool.durability));
@@ -91,43 +93,40 @@ function renderToolCard(tool) {
   if (shift) {
     const remaining = shift.startedAt + shift.durationMs - Date.now();
     if (remaining <= 0) {
-      actions = `<button data-action="collect" data-tool="${tool.id}" class="primary">Collect</button>`;
+      actions = `<button data-action="collect" data-tool="${tool.id}" class="primary pill-btn">Collect</button>`;
     } else {
-      actions = `<span class="muted small">⏱ ${fmtTime(remaining)} remaining</span>`;
+      actions = `<span class="muted small">⏱ ${fmtTime(remaining)}</span>`;
     }
   } else if (broken) {
-    actions = `<button data-action="fuse" data-tool="${tool.id}" class="danger">Fuse to Repair (§4.5)</button>`;
+    actions = `<button data-action="fuse" data-tool="${tool.id}" class="danger pill-btn" title="Fusion Repair, §4.5">Fuse</button>`;
   } else if (worn) {
     actions = `
-      <button data-action="salvage" data-tool="${tool.id}">Salvage</button>
-      <button data-action="reforge-start" data-tool="${tool.id}">Reforge (§2.4)</button>`;
+      <button data-action="salvage" data-tool="${tool.id}" class="pill-btn">Salvage</button>
+      <button data-action="reforge-start" data-tool="${tool.id}" class="pill-btn" title="Reforge, §2.4">Reforge</button>`;
   } else {
     const cost = repairCostSLP(tool.durability, tool.rarity, tool.repairCount);
     const p = Math.round(repairSuccessChance(tool.durability, tool.repairCount, false) * 100);
     const canRepair = tool.durability < 100;
     const nodeButtons = Object.entries(NODES)
       .filter(([, n]) => !n.minRarity || RARITY_RANK[tool.rarity] >= RARITY_RANK[n.minRarity])
-      .map(([key, n]) => `<button data-action="send" data-tool="${tool.id}" data-node="${key}">Send: ${n.name}</button>`)
+      .map(([key, n], i) => `<button data-action="send" data-tool="${tool.id}" data-node="${key}" class="pill-btn" title="Send to ${n.name}">Mine T${i + 1}</button>`)
       .join('');
     actions = `
       ${nodeButtons}
-      ${canRepair ? `<button data-action="repair" data-tool="${tool.id}" title="SLP cost ${cost}, ${p}% success">Repair (${cost} SLP, ${p}%)</button>` : ''}
-      ${tool.rarity === 'common' || tool.rarity === 'rare' ? `<button data-action="reforge-start" data-tool="${tool.id}">Reforge (§2.4)</button>` : ''}`;
+      ${canRepair ? `<button data-action="repair" data-tool="${tool.id}" class="pill-btn" title="SLP cost ${cost}, ${p}% success">Repair</button>` : ''}
+      ${tool.rarity === 'common' || tool.rarity === 'rare' ? `<button data-action="reforge-start" data-tool="${tool.id}" class="pill-btn" title="Reforge, §2.4">Reforge</button>` : ''}`;
   }
 
   const tooltip = `${tool.model} — ${TRAITS[tool.model] || ''}`;
   return `
-    <div class="card">
-      <div class="card-head">
-        <div class="icon-wrap ${tool.rarity}" title="${tooltip}">${toolIconSVG(tool.model, 26)}</div>
-        <span class="tag ${tool.rarity}">${tool.rarity}</span>
-        ${statusTag}
-      </div>
-      <div class="durbar-wrap">
+    <div class="item-tile ${tool.rarity}">
+      ${statusBadge}
+      <div class="icon-wrap ${tool.rarity}" title="${tooltip}">${toolIconSVG(tool.model, 28)}</div>
+      <div class="durbar-wrap" style="width:100%">
         <div class="durbar-track"><div class="durbar-fill ${durClass}" style="width:${durPct}%"></div></div>
-        <div class="durbar-label"><span>Durability ${tool.durability}/${tool.maxDurability}</span><span>Repairs: ${tool.repairCount}</span></div>
+        <div class="durbar-label"><span>${tool.durability}/${tool.maxDurability}</span></div>
       </div>
-      <div class="card-actions">${actions}</div>
+      <div class="tile-actions">${actions}</div>
     </div>`;
 }
 
@@ -154,9 +153,9 @@ function renderBoxes() {
       .map((r) => `<span><i class="dot ${r}"></i>${r} ${(b.odds[r] * 100).toFixed(1)}%</span>`)
       .join('');
     return `
-    <div class="card">
+    <div class="box-card ${key}">
       <div class="card-head">
-        <div class="icon-wrap box" title="Exact odds — ${oddsStr}">${boxIconSVG(key, 30)}</div>
+        <div class="icon-wrap box ${key}" title="Exact odds — ${oddsStr}">${boxIconSVG(key, 30)}</div>
         <div>
           <div class="box-name">${b.name}</div>
         </div>
@@ -172,6 +171,39 @@ function renderBoxes() {
 function renderLog() {
   const log = document.getElementById('event-log');
   log.innerHTML = state.log.map((e) => `<li><time>${new Date(e.t).toLocaleTimeString()}</time>${e.message}</li>`).join('');
+}
+
+// §7's direct-purchase alternative to gambling: buy the exact model you want at a fixed
+// USDC price. Priced above box EV on purpose (§14.1) — boxes must always win on price.
+function renderMarketplace() {
+  const tabs = document.getElementById('market-tabs');
+  tabs.innerHTML = RARITIES.map((r) =>
+    `<button class="market-tab ${r} ${r === marketFilter ? 'active' : ''}" data-action="market-tab" data-rarity="${r}">${r} — $${TIER[r].directPriceUSDC}</button>`
+  ).join('');
+
+  const grid = document.getElementById('market-grid');
+  const owned = ownedModels(state, marketFilter);
+  grid.innerHTML = MODELS[marketFilter].map((model) => {
+    const price = TIER[marketFilter].directPriceUSDC;
+    const have = owned.includes(model);
+    return `
+    <div class="market-listing">
+      <div class="icon-wrap ${marketFilter}" title="${model} — ${TRAITS[model] || ''}">${toolIconSVG(model, 28)}</div>
+      <div class="price">$${price}</div>
+      <button data-action="buy-direct" data-model="${model}" data-rarity="${marketFilter}" class="primary pill-btn" ${state.usdc < price ? 'disabled' : ''}>${have ? 'Buy another' : 'Buy'}</button>
+    </div>`;
+  }).join('');
+}
+
+function doBuyDirect(model, rarity) {
+  const price = TIER[rarity].directPriceUSDC;
+  if (state.usdc < price) return;
+  state.usdc -= price;
+  const newTool = { id: state.nextToolId++, rarity, model, durability: 100, maxDurability: 100, repairCount: 0 };
+  state.tools.push(newTool);
+  logEvent(state, `Bought ${model} (${rarity}) direct for $${price} USDC — no gambling, §7.`);
+  saveState(state);
+  render();
 }
 
 // ---------- modal helper ----------
@@ -375,6 +407,8 @@ document.addEventListener('click', (e) => {
   else if (action === 'reforge-start') openReforgeModal(toolId);
   else if (action === 'reforge-confirm') doReforgeConfirm(toolId);
   else if (action === 'buy-box') doBuyBox(el.dataset.box);
+  else if (action === 'market-tab') { marketFilter = el.dataset.rarity; renderMarketplace(); }
+  else if (action === 'buy-direct') doBuyDirect(el.dataset.model, el.dataset.rarity);
   else if (action === 'close-modal') { if (e.target === el) closeModal(); }
 });
 

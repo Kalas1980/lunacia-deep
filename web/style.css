@@ -7,10 +7,15 @@
   --muted: #8b96b3;
   --accent: #e0a83f;
   --accent-2: #f4c869;
+  --accent-gradient: linear-gradient(135deg, #f4c869, #e0833f);
   --good: #4ade80;
   --warn: #facc15;
   --bad: #f87171;
   --broken: #ff4d4d;
+  --c-common: #cbd5e1;
+  --c-rare: #60a5fa;
+  --c-epic: #c084fc;
+  --c-mystic: #fb923c;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
@@ -46,7 +51,7 @@ body {
   padding: 6px 14px;
   font-size: 0.85rem;
 }
-.pill b { color: var(--accent); margin-left: 4px; }
+.pill b { color: var(--accent-2); margin-left: 4px; }
 
 .ghost-btn, button {
   background: var(--panel-2);
@@ -59,8 +64,10 @@ body {
 }
 button:hover { border-color: var(--accent); }
 button:disabled { opacity: 0.4; cursor: not-allowed; }
-button.primary { background: var(--accent); color: #0b1220; border-color: var(--accent); font-weight: 600; }
+button.primary { background: var(--accent-gradient); color: #241505; border: none; font-weight: 700; box-shadow: 0 2px 10px rgba(224,131,63,0.35); }
+button.primary:disabled { box-shadow: none; }
 button.danger { background: var(--bad); color: #2a0000; border-color: var(--bad); font-weight: 600; }
+button.pill-btn { padding: 5px 10px; font-size: 0.78rem; border-radius: 999px; }
 
 .banner {
   background: #142033;
@@ -69,7 +76,7 @@ button.danger { background: var(--bad); color: #2a0000; border-color: var(--bad)
   padding: 8px 22px;
   border-bottom: 1px solid var(--border);
 }
-.banner code { color: var(--accent); }
+.banner code { color: var(--accent-2); }
 
 .layout {
   display: grid;
@@ -79,6 +86,7 @@ button.danger { background: var(--bad); color: #2a0000; border-color: var(--bad)
   max-width: 1100px;
   margin: 0 auto;
 }
+.layout .panel.span-2 { grid-column: 1 / -1; }
 
 .panel {
   background: var(--panel);
@@ -90,30 +98,27 @@ button.danger { background: var(--bad); color: #2a0000; border-color: var(--bad)
 .muted { color: var(--muted); }
 .small { font-size: 0.8rem; }
 
-.codex-grid {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 6px;
-}
-.codex-slot {
+/* ---- Codex: compact, grouped by rarity tier (10 / 10 / 5+5) instead of one long
+   interleaved grid — three short rows instead of six, and the grouping itself tells you
+   which tier you're missing from. ---- */
+.codex-compact { display: flex; flex-direction: column; gap: 7px; }
+.codex-tier { display: flex; align-items: center; gap: 8px; }
+.codex-tier-label { width: 46px; flex-shrink: 0; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.codex-tier-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; flex: 1; }
+.codex-chip {
   aspect-ratio: 1;
-  border-radius: 6px;
+  border-radius: 5px;
   border: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.65rem;
-  text-align: center;
-  padding: 3px;
+  display: flex; align-items: center; justify-content: center;
   background: var(--panel-2);
   color: var(--muted);
 }
-.codex-slot.owned { color: var(--bg); font-weight: 700; }
-.codex-slot.common.owned { background: #cbd5e1; }
-.codex-slot.rare.owned { background: #60a5fa; }
-.codex-slot.epic.owned { background: #c084fc; }
-.codex-slot.mystic.owned { background: #fb923c; }
-.codex-slot svg { width: 60%; height: 60%; }
+.codex-chip svg { width: 62%; height: 62%; }
+.codex-chip.owned { color: var(--bg); }
+.codex-chip.common.owned { background: var(--c-common); }
+.codex-chip.rare.owned { background: var(--c-rare); }
+.codex-chip.epic.owned { background: var(--c-epic); }
+.codex-chip.mystic.owned { background: var(--c-mystic); }
 
 /* ---- item icons: tools & boxes shown as pictures, name/trait on hover ---- */
 .icon-wrap {
@@ -124,43 +129,45 @@ button.danger { background: var(--bad); color: #2a0000; border-color: var(--bad)
   background: var(--bg);
   flex-shrink: 0;
 }
-.icon-wrap.common { color: #cbd5e1; border-color: #cbd5e1; }
-.icon-wrap.rare { color: #60a5fa; border-color: #60a5fa; }
-.icon-wrap.epic { color: #c084fc; border-color: #c084fc; }
-.icon-wrap.mystic { color: #fb923c; border-color: #fb923c; }
-.icon-wrap.box { color: var(--accent-2); border-color: var(--accent); width: 52px; height: 52px; }
+.icon-wrap.common { color: var(--c-common); border-color: var(--c-common); }
+.icon-wrap.rare { color: var(--c-rare); border-color: var(--c-rare); }
+.icon-wrap.epic { color: var(--c-epic); border-color: var(--c-epic); }
+.icon-wrap.mystic { color: var(--c-mystic); border-color: var(--c-mystic); }
 [title] { cursor: help; }
 
-.box-name { font-weight: 700; font-size: 1rem; }
-.box-flavor { font-style: italic; color: var(--muted); font-size: 0.8rem; margin: 4px 0 8px; }
-
-/* One continuous bar, segments sized proportionally to odds — not four separate bars
-   each independently scaled to its own percentage, which reads as unrelated stubs
-   instead of a single distribution. */
-.rarity-bar { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: var(--border); margin: 8px 0; }
-.rarity-bar .seg { height: 100%; min-width: 4px; flex-shrink: 0; }
-.rarity-bar .seg.common { background: #cbd5e1; }
-.rarity-bar .seg.rare { background: #60a5fa; }
-.rarity-bar .seg.epic { background: #c084fc; }
-.rarity-bar .seg.mystic { background: #fb923c; }
-.rarity-legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 0.7rem; color: var(--muted); margin-bottom: 8px; }
-.rarity-legend span { display: inline-flex; align-items: center; gap: 4px; }
-.rarity-legend .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
-.rarity-legend .dot.common { background: #cbd5e1; }
-.rarity-legend .dot.rare { background: #60a5fa; }
-.rarity-legend .dot.epic { background: #c084fc; }
-.rarity-legend .dot.mystic { background: #fb923c; }
-
-.tool-list, .node-list, .box-list { display: flex; flex-direction: column; gap: 10px; }
-
-.card {
+/* ---- Inventory: a grid of item tiles, not a stack of dashboard rows ---- */
+.tool-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+.item-tile {
   background: var(--panel-2);
   border: 1px solid var(--border);
+  border-top: 3px solid var(--border);
   border-radius: 10px;
-  padding: 12px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  position: relative;
 }
-.card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-.card-title { font-weight: 600; }
+.item-tile.common { border-top-color: var(--c-common); }
+.item-tile.rare { border-top-color: var(--c-rare); }
+.item-tile.epic { border-top-color: var(--c-epic); }
+.item-tile.mystic { border-top-color: var(--c-mystic); }
+.item-tile .icon-wrap { width: 52px; height: 52px; }
+.item-tile .status-badge {
+  position: absolute; top: 6px; right: 6px;
+  font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.03em;
+  padding: 2px 6px; border-radius: 999px; border: 1px solid var(--border);
+}
+.item-tile .durbar-track { width: 100%; }
+.item-tile .durbar-label { justify-content: center; gap: 6px; }
+.item-tile .tile-actions { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-top: 2px; }
+
 .tag {
   font-size: 0.7rem;
   text-transform: uppercase;
@@ -169,17 +176,17 @@ button.danger { background: var(--bad); color: #2a0000; border-color: var(--bad)
   border-radius: 999px;
   border: 1px solid var(--border);
 }
-.tag.common { color: #cbd5e1; }
-.tag.rare { color: #60a5fa; }
-.tag.epic { color: #c084fc; }
-.tag.mystic { color: #fb923c; }
+.tag.common { color: var(--c-common); }
+.tag.rare { color: var(--c-rare); }
+.tag.epic { color: var(--c-epic); }
+.tag.mystic { color: var(--c-mystic); }
 .tag.status-broken { color: var(--broken); border-color: var(--broken); }
 .tag.status-worn { color: var(--bad); border-color: var(--bad); }
 .tag.status-mining { color: var(--good); border-color: var(--good); }
 
-.durbar-wrap { margin: 8px 0; }
+.durbar-wrap { margin: 4px 0; }
 .durbar-track {
-  height: 8px;
+  height: 7px;
   border-radius: 999px;
   background: #0b1220;
   overflow: hidden;
@@ -190,11 +197,74 @@ button.danger { background: var(--bad); color: #2a0000; border-color: var(--bad)
 .durbar-fill.low { background: var(--warn); }
 .durbar-fill.crit { background: var(--bad); }
 .durbar-fill.broken { background: var(--broken); }
-.durbar-label { font-size: 0.72rem; color: var(--muted); margin-top: 3px; display: flex; justify-content: space-between; }
+.durbar-label { font-size: 0.66rem; color: var(--muted); margin-top: 3px; display: flex; justify-content: space-between; }
 
+.node-list, .box-list { display: flex; flex-direction: column; gap: 10px; }
+
+.card {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+}
+.card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.card-title { font-weight: 600; }
 .card-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-
 .node-req { color: var(--muted); font-size: 0.8rem; }
+
+/* ---- Blind boxes: each tier visually distinct, not three copies of the same card ---- */
+.box-card { border-width: 1px; border-style: solid; border-radius: 12px; padding: 14px; }
+.box-card.basic { background: var(--panel-2); border-color: var(--border); }
+.box-card.prospector {
+  background: var(--panel-2);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent) inset, 0 0 18px rgba(224,168,63,0.18);
+}
+.box-card.deepvault {
+  background: linear-gradient(160deg, var(--panel-2), #241a34);
+  border-color: var(--c-epic);
+  box-shadow: 0 0 0 1px var(--c-epic) inset, 0 0 22px rgba(192,132,252,0.22);
+}
+.box-card .icon-wrap.box.basic { color: var(--muted); border-color: var(--border); }
+.box-card .icon-wrap.box.prospector { color: var(--accent-2); border-color: var(--accent); }
+.box-card .icon-wrap.box.deepvault { color: var(--c-epic); border-color: var(--c-epic); }
+
+.box-name { font-weight: 700; font-size: 1rem; }
+.box-flavor { font-style: italic; color: var(--muted); font-size: 0.8rem; margin: 4px 0 8px; }
+
+/* One continuous bar, segments sized proportionally to odds. Kept short and secondary —
+   the flavor and icon carry the card, not a data table. */
+.rarity-bar { display: flex; width: 160px; max-width: 100%; height: 6px; border-radius: 999px; overflow: hidden; background: var(--border); margin: 6px 0; }
+.rarity-bar .seg { height: 100%; min-width: 3px; flex-shrink: 0; }
+.rarity-bar .seg.common { background: var(--c-common); }
+.rarity-bar .seg.rare { background: var(--c-rare); }
+.rarity-bar .seg.epic { background: var(--c-epic); }
+.rarity-bar .seg.mystic { background: var(--c-mystic); }
+.rarity-legend { display: flex; gap: 10px; flex-wrap: wrap; font-size: 0.66rem; color: var(--muted); margin-bottom: 8px; }
+.rarity-legend span { display: inline-flex; align-items: center; gap: 4px; }
+.rarity-legend .dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+.rarity-legend .dot.common { background: var(--c-common); }
+.rarity-legend .dot.rare { background: var(--c-rare); }
+.rarity-legend .dot.epic { background: var(--c-epic); }
+.rarity-legend .dot.mystic { background: var(--c-mystic); }
+
+/* ---- Marketplace: §7's direct-purchase alternative to gambling ---- */
+.market-tabs { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+.market-tab {
+  background: var(--panel-2); border: 1px solid var(--border); color: var(--muted);
+  border-radius: 999px; padding: 6px 14px; font-size: 0.8rem; cursor: pointer; font-weight: 600;
+}
+.market-tab.active { color: var(--bg); border-color: transparent; }
+.market-tab.common.active { background: var(--c-common); }
+.market-tab.rare.active { background: var(--c-rare); }
+.market-tab.epic.active { background: var(--c-epic); }
+.market-tab.mystic.active { background: var(--c-mystic); }
+.market-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+.market-listing {
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px;
+  padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center;
+}
+.market-listing .price { font-weight: 700; color: var(--accent-2); font-size: 0.85rem; }
 
 .event-log { list-style: none; margin: 0; padding: 0; max-height: 220px; overflow-y: auto; }
 .event-log li { padding: 4px 0; border-bottom: 1px dashed var(--border); font-size: 0.82rem; color: var(--muted); }
@@ -214,5 +284,8 @@ button.danger { background: var(--bad); color: #2a0000; border-color: var(--bad)
 
 @media (max-width: 820px) {
   .layout { grid-template-columns: 1fr; }
-  .codex-grid { grid-template-columns: repeat(5, 1fr); }
+  .codex-tier-grid { grid-template-columns: repeat(10, 1fr); }
+}
+@media (max-width: 480px) {
+  .codex-tier-label { width: 34px; font-size: 0.55rem; }
 }
