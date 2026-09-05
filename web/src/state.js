@@ -7,7 +7,8 @@ const STORAGE_KEY = 'lunacia-deep-prototype-v1';
 
 function starterState() {
   return {
-    ore: 300, // enough to open a couple of Basic Crates immediately (§8 onboarding ramp)
+    ore: 300, // mining OUTPUT only — never spends on boxes (§0's no-money-printer rule)
+    usdc: 100, // buys blind boxes (§7) — external revenue stand-in, separate from ore
     slp: 500,
     nextToolId: 3,
     tools: [
@@ -22,7 +23,9 @@ function starterState() {
 export function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    // Backfill missing fields for saves from before a schema change (e.g. usdc, added
+    // when boxes moved from an ore price to a USDC price) instead of corrupting into NaN.
+    if (raw) return { ...starterState(), ...JSON.parse(raw) };
   } catch {
     // corrupt/missing storage falls through to a fresh game
   }

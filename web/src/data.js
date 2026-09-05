@@ -35,11 +35,13 @@ export const MODELS = {
   ],
 };
 
-// §7 blind box odds (Genesis-eligible box tiers only; direct-purchase omitted from prototype).
+// §7 blind box odds and prices — priced in USDC exactly as designed. Boxes mint tools from
+// external revenue; they are never bought with ore, which is mining OUTPUT, not input
+// (§0: "no money printer" — ore must only flow toward AXS/RON/SLP via refineries, §5).
 export const BOXES = {
-  basic: { name: 'Basic Crate', priceOre: 50, odds: { common: 0.82, rare: 0.165, epic: 0.014, mystic: 0.001 } },
-  prospector: { name: "Prospector's Case", priceOre: 200, odds: { common: 0.42, rare: 0.46, epic: 0.11, mystic: 0.01 } },
-  deepvault: { name: 'Deep Vault', priceOre: 750, odds: { common: 0, rare: 0.55, epic: 0.38, mystic: 0.07 } },
+  basic: { name: 'Basic Crate', priceUSDC: 5, odds: { common: 0.82, rare: 0.165, epic: 0.014, mystic: 0.001 } },
+  prospector: { name: "Prospector's Case", priceUSDC: 20, odds: { common: 0.42, rare: 0.46, epic: 0.11, mystic: 0.01 } },
+  deepvault: { name: 'Deep Vault', priceUSDC: 75, odds: { common: 0, rare: 0.55, epic: 0.38, mystic: 0.07 } },
 };
 
 // §6 nodes — T1/T2 only in this prototype (T3+ need Depth Permits, out of scope for Round 1).

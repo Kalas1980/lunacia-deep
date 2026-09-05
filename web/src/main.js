@@ -33,6 +33,7 @@ function activeShiftFor(toolId) {
 
 function render() {
   document.getElementById('ore-balance').textContent = state.ore;
+  document.getElementById('usdc-balance').textContent = state.usdc;
   document.getElementById('slp-balance').textContent = state.slp;
   renderCodex();
   renderTools();
@@ -142,9 +143,9 @@ function renderBoxes() {
   const list = document.getElementById('box-list');
   list.innerHTML = Object.entries(BOXES).map(([key, b]) => `
     <div class="card">
-      <div class="card-head"><span class="card-title">${b.name}</span><span class="muted small">${b.priceOre} ore</span></div>
+      <div class="card-head"><span class="card-title">${b.name}</span><span class="muted small">$${b.priceUSDC} USDC</span></div>
       <p class="node-req">${Object.entries(b.odds).filter(([, p]) => p > 0).map(([r, p]) => `${r} ${(p * 100).toFixed(1)}%`).join(' · ')}</p>
-      <div class="card-actions"><button data-action="buy-box" data-box="${key}" class="primary" ${state.ore < b.priceOre ? 'disabled' : ''}>Open</button></div>
+      <div class="card-actions"><button data-action="buy-box" data-box="${key}" class="primary" ${state.usdc < b.priceUSDC ? 'disabled' : ''}>Open</button></div>
     </div>`).join('');
 }
 
@@ -305,8 +306,8 @@ function doReforgeConfirm(toolId) {
 
 async function doBuyBox(boxKey) {
   const box = BOXES[boxKey];
-  if (state.ore < box.priceOre) return;
-  state.ore -= box.priceOre;
+  if (state.usdc < box.priceUSDC) return;
+  state.usdc -= box.priceUSDC;
   const seed = randomSeed();
   const nonce = state.nextToolId;
   const commit = await sha256Hex(`${seed}:${nonce}`);
