@@ -133,13 +133,23 @@ button.danger { background: var(--bad); color: #2a0000; border-color: var(--bad)
 
 .box-name { font-weight: 700; font-size: 1rem; }
 .box-flavor { font-style: italic; color: var(--muted); font-size: 0.8rem; margin: 4px 0 8px; }
-.rarity-pips { display: flex; gap: 4px; margin: 6px 0; }
-.rarity-pips .pip { flex: 1; height: 6px; border-radius: 999px; background: var(--border); overflow: hidden; }
-.rarity-pips .pip-fill { height: 100%; }
-.rarity-pips .pip-fill.common { background: #cbd5e1; }
-.rarity-pips .pip-fill.rare { background: #60a5fa; }
-.rarity-pips .pip-fill.epic { background: #c084fc; }
-.rarity-pips .pip-fill.mystic { background: #fb923c; }
+
+/* One continuous bar, segments sized proportionally to odds — not four separate bars
+   each independently scaled to its own percentage, which reads as unrelated stubs
+   instead of a single distribution. */
+.rarity-bar { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: var(--border); margin: 8px 0; }
+.rarity-bar .seg { height: 100%; min-width: 4px; flex-shrink: 0; }
+.rarity-bar .seg.common { background: #cbd5e1; }
+.rarity-bar .seg.rare { background: #60a5fa; }
+.rarity-bar .seg.epic { background: #c084fc; }
+.rarity-bar .seg.mystic { background: #fb923c; }
+.rarity-legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 0.7rem; color: var(--muted); margin-bottom: 8px; }
+.rarity-legend span { display: inline-flex; align-items: center; gap: 4px; }
+.rarity-legend .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+.rarity-legend .dot.common { background: #cbd5e1; }
+.rarity-legend .dot.rare { background: #60a5fa; }
+.rarity-legend .dot.epic { background: #c084fc; }
+.rarity-legend .dot.mystic { background: #fb923c; }
 
 .tool-list, .node-list, .box-list { display: flex; flex-direction: column; gap: 10px; }
 

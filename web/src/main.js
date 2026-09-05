@@ -145,9 +145,13 @@ function renderNodes() {
 function renderBoxes() {
   const list = document.getElementById('box-list');
   list.innerHTML = Object.entries(BOXES).map(([key, b]) => {
-    const oddsStr = Object.entries(b.odds).filter(([, p]) => p > 0).map(([r, p]) => `${r} ${(p * 100).toFixed(1)}%`).join(' · ');
-    const pips = RARITIES.filter((r) => b.odds[r] > 0)
-      .map((r) => `<div class="pip" title="${r} ${(b.odds[r] * 100).toFixed(1)}%"><div class="pip-fill ${r}" style="width:${Math.max(8, b.odds[r] * 100)}%"></div></div>`)
+    const activeRarities = RARITIES.filter((r) => b.odds[r] > 0);
+    const oddsStr = activeRarities.map((r) => `${r} ${(b.odds[r] * 100).toFixed(1)}%`).join(' · ');
+    const segments = activeRarities
+      .map((r) => `<div class="seg ${r}" style="flex-grow:${b.odds[r]}" title="${r} ${(b.odds[r] * 100).toFixed(1)}%"></div>`)
+      .join('');
+    const legend = activeRarities
+      .map((r) => `<span><i class="dot ${r}"></i>${r} ${(b.odds[r] * 100).toFixed(1)}%</span>`)
       .join('');
     return `
     <div class="card">
@@ -158,7 +162,8 @@ function renderBoxes() {
         </div>
       </div>
       <p class="box-flavor">${b.flavor}</p>
-      <div class="rarity-pips" title="Relative rarity odds — hover a segment for the exact chance">${pips}</div>
+      <div class="rarity-bar">${segments}</div>
+      <div class="rarity-legend">${legend}</div>
       <div class="card-actions"><button data-action="buy-box" data-box="${key}" class="primary" ${state.usdc < b.priceUSDC ? 'disabled' : ''}>Open — $${b.priceUSDC}</button></div>
     </div>`;
   }).join('');
