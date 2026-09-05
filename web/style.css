@@ -299,7 +299,15 @@ button.pill-btn { padding: 5px 10px; font-size: 0.78rem; border-radius: 999px; }
   background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
   padding: 20px; max-width: 420px; width: 90%;
 }
-.modal h3 { margin-top: 0; }
+.modal h3 { margin-top: 0; display: flex; align-items: center; gap: 8px; }
+.modal-icon { display: inline-flex; flex-shrink: 0; }
+.modal-icon img { display: block; }
+
+/* ---- Reforge outcome bar: same visual language as box/smelt rarity bars, different
+   semantics (an action's outcome, not an item's rarity) so it gets its own colors. ---- */
+.seg.outcome-upgrade, .dot.outcome-upgrade { background: var(--good); }
+.seg.outcome-match, .dot.outcome-match { background: var(--accent-2); }
+.seg.outcome-flaw, .dot.outcome-flaw { background: var(--bad); }
 .modal .hash { font-family: monospace; font-size: 0.72rem; word-break: break-all; color: var(--muted); background: #0b1220; padding: 8px; border-radius: 6px; margin: 8px 0; }
 
 /* ---- box-opening sequence: anticipation, then a rarity-colored reveal burst ---- */

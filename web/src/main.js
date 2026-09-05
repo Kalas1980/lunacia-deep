@@ -6,14 +6,14 @@
 import {
   RARITIES, MODELS, TRAITS, TIER, BOXES, NODES, DEMO_SHIFT_MS, fusionFee, fusionFeeAXS,
   SMELTS, REFINERY_MULT, REFINERY_MAX_DURABILITY, refineryRepairCostSLP, refineryRepairCostOre,
-} from './data.js?v=13';
+} from './data.js?v=14';
 import {
   repairCostSLP, repairSuccessChance, rollRepair, isBroken, isWorn,
   fusionRepair, reforgeOdds, reforge, shiftYield, drainDurability, pickModel, bestRefineryMult,
-} from './economy.js?v=13';
-import { loadState, saveState, resetState, logEvent, getTool, ownedModels } from './state.js?v=13';
-import { randomSeed, sha256Hex, makeRoller, weightedPick } from './rng.js?v=13';
-import { toolIconSVG, boxIconSVG, refineryIconSVG } from './icons.js?v=13';
+} from './economy.js?v=14';
+import { loadState, saveState, resetState, logEvent, getTool, ownedModels } from './state.js?v=14';
+import { randomSeed, sha256Hex, makeRoller, weightedPick } from './rng.js?v=14';
+import { toolIconSVG, boxIconSVG, refineryIconSVG } from './icons.js?v=14';
 
 const RARITY_RANK = { common: 0, rare: 1, epic: 2, mystic: 3 };
 let state = loadState();
@@ -430,7 +430,7 @@ function openFusionModal(toolId) {
   const feeAXS = fusionFeeAXS(tool.rarity);
   if (fuelOptions.length === 0) {
     showModal(`
-      <h3>Fusion Repair — ${tool.model}</h3>
+      <h3><span class="modal-icon">${toolIconSVG(tool.model, tool.rarity, 26)}</span>Fusion Repair — ${tool.model}</h3>
       <p>${tool.model} is Broken (0/100). SLP repair is unavailable (§4.5).</p>
       <p>You have no other <b>${tool.rarity}</b> tool to use as fuel. Open a blind box to get one.</p>
       <div class="card-actions"><button data-action="close-modal">Close</button></div>`);
@@ -443,7 +443,7 @@ function openFusionModal(toolId) {
     ? `<p>Also bonds <b>${feeAXS} AXS → bAXS</b> (one-way, never unlocks — §4.5's scarcity toll on ${tool.rarity} Fusion).</p>`
     : '';
   showModal(`
-    <h3>Fusion Repair — ${tool.model}</h3>
+    <h3><span class="modal-icon">${toolIconSVG(tool.model, tool.rarity, 26)}</span>Fusion Repair — ${tool.model}</h3>
     <p>Burns one <b>${tool.rarity}</b> tool as fuel. Fee: <b>${fee} SLP</b>. Restores current
     durability to 50% of ${tool.model}'s max (${Math.floor(tool.maxDurability / 2)}/${tool.maxDurability}), deterministic.</p>
     ${axsLine}
@@ -493,6 +493,20 @@ function doFuseConfirm(toolId) {
   render();
 }
 
+// The odds text used to claim "updates per the currently-selected pair" but was only ever
+// computed once against partners[0] — picking a different partner in the dropdown silently
+// left the wrong numbers on screen. A game whose whole pitch is "published, honest odds"
+// (§7, §9) can't afford that gap, so this is now a live listener, not a one-time render.
+function reforgeOddsBarHTML(tool, partner) {
+  const { pUpgrade, pMatch, pFlaw } = reforgeOdds(tool, partner);
+  const segs = [
+    ['upgrade', 'Upgrade', pUpgrade], ['match', 'Match', pMatch], ['flaw', 'Flaw', pFlaw],
+  ];
+  const bar = segs.map(([cls, label, p]) => `<div class="seg outcome-${cls}" style="flex-grow:${p}" title="${label} ${Math.round(p * 100)}%"></div>`).join('');
+  const legend = segs.map(([cls, label, p]) => `<span><i class="dot outcome-${cls}"></i>${label} ${Math.round(p * 100)}%</span>`).join('');
+  return `<div class="rarity-bar">${bar}</div><div class="rarity-legend">${legend}</div>`;
+}
+
 function openReforgeModal(toolId) {
   const tool = getTool(state, toolId);
   const partners = state.tools.filter((t) => t.rarity === tool.rarity && t.id !== tool.id && !activeShiftFor(t.id));
@@ -501,18 +515,21 @@ function openReforgeModal(toolId) {
       <div class="card-actions"><button data-action="close-modal">Close</button></div>`);
     return;
   }
-  const { pUpgrade, pMatch, pFlaw } = reforgeOdds(tool, partners[0]);
   const options = partners.map((p) => `<option value="${p.id}">${p.model} (${p.durability}/${p.maxDurability})</option>`).join('');
   showModal(`
-    <h3>Reforge — ${tool.model}</h3>
-    <p>Burns <b>both</b> tools, mints one new ${tool.rarity} tool. Odds shown are for the
-    currently-selected pair and update per §2.4's condition formula.</p>
+    <h3><span class="modal-icon">${toolIconSVG(tool.model, tool.rarity, 26)}</span>Reforge — ${tool.model}</h3>
+    <p>Burns <b>both</b> tools, mints one new ${tool.rarity} tool. Odds update live for
+    whichever partner is selected below, per §2.4's condition formula.</p>
     <label>Partner tool: <select id="reforge-select">${options}</select></label>
-    <p class="muted small">Upgrade-ish ${Math.round(pUpgrade * 100)}% · Match ${Math.round(pMatch * 100)}% · Flaw ${Math.round(pFlaw * 100)}%</p>
+    <div id="reforge-odds">${reforgeOddsBarHTML(tool, partners[0])}</div>
     <div class="card-actions">
       <button data-action="reforge-confirm" data-tool="${toolId}" class="primary">Reforge</button>
       <button data-action="close-modal">Cancel</button>
     </div>`);
+  document.getElementById('reforge-select').addEventListener('change', (e) => {
+    const partner = getTool(state, Number(e.target.value));
+    document.getElementById('reforge-odds').innerHTML = reforgeOddsBarHTML(tool, partner);
+  });
 }
 
 function doReforgeConfirm(toolId) {
