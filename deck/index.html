@@ -13,8 +13,8 @@
   --primitive-color-navy-800: #171e2e;
   --primitive-color-navy-900: #0f1420;
   --primitive-color-navy-950: #0b0f18;
-  --primitive-color-blue-400: #6ea8ff;
-  --primitive-color-blue-500: #4a86e8;
+  --primitive-color-gold-400: #e0a83f;
+  --primitive-color-gold-500: #f4c869;
   --primitive-color-green-500: #4ade80;
   --primitive-color-yellow-500: #facc15;
   --primitive-color-red-400: #f87171;
@@ -48,7 +48,7 @@
   --color-border: #2a3550;
   --color-foreground: #e7ecf7;
   --color-muted-foreground: #8b96b3;
-  --color-primary: #6ea8ff;
+  --color-primary: #e0a83f;
   --color-success: #4ade80;
   --color-warning: #facc15;
   --color-danger: #ff4d4d;
@@ -121,7 +121,7 @@ h1, h2, h3 { font-family: inherit; font-weight: 700; }
 .slide-title {
   font-size: clamp(32px, 5.2vw, 64px);
   line-height: 1.08;
-  background: linear-gradient(135deg, #e7ecf7, #6ea8ff 70%);
+  background: linear-gradient(135deg, #e7ecf7, #e0a83f 70%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -461,12 +461,12 @@ new Chart(document.getElementById('repairChart'), {
     datasets: [{
       label: 'Repair success %',
       data: pSuccess,
-      borderColor: '#6ea8ff',
+      borderColor: '#e0a83f',
       backgroundColor: 'rgba(110,168,255,0.12)',
       borderWidth: 3,
       fill: true,
       tension: 0.3,
-      pointBackgroundColor: '#6ea8ff',
+      pointBackgroundColor: '#e0a83f',
       pointRadius: 4
     }, {
       label: 'BROKEN — Fusion only',

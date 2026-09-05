@@ -8,8 +8,8 @@
   --primitive-color-navy-800: #171e2e;
   --primitive-color-navy-900: #0f1420;
   --primitive-color-navy-950: #0b0f18;
-  --primitive-color-blue-400: #6ea8ff;
-  --primitive-color-blue-500: #4a86e8;
+  --primitive-color-gold-400: #e0a83f;
+  --primitive-color-gold-500: #f4c869;
   --primitive-color-green-500: #4ade80;
   --primitive-color-yellow-500: #facc15;
   --primitive-color-red-400: #f87171;
@@ -47,7 +47,7 @@
   --color-border: #2a3550;
   --color-foreground: #e7ecf7;
   --color-muted-foreground: #8b96b3;
-  --color-primary: #6ea8ff;
+  --color-primary: #e0a83f;
   --color-success: #4ade80;
   --color-warning: #facc15;
   --color-danger: #ff4d4d;

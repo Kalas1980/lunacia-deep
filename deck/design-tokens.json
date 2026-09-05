@@ -9,9 +9,9 @@
         "700": { "$value": "#1e2740", "$type": "color" },
         "600": { "$value": "#2a3550", "$type": "color" }
       },
-      "blue": {
-        "400": { "$value": "#6ea8ff", "$type": "color" },
-        "500": { "$value": "#4a86e8", "$type": "color" }
+      "gold": {
+        "400": { "$value": "#e0a83f", "$type": "color" },
+        "500": { "$value": "#f4c869", "$type": "color" }
       },
       "green": { "500": { "$value": "#4ade80", "$type": "color" } },
       "yellow": { "500": { "$value": "#facc15", "$type": "color" } },
@@ -60,7 +60,7 @@
       "border": { "$value": "{primitive.color.navy.600}", "$type": "color" },
       "foreground": { "$value": "{primitive.color.text}", "$type": "color" },
       "muted-foreground": { "$value": "{primitive.color.muted}", "$type": "color" },
-      "primary": { "$value": "{primitive.color.blue.400}", "$type": "color" },
+      "primary": { "$value": "{primitive.color.gold.400}", "$type": "color" },
       "success": { "$value": "{primitive.color.green.500}", "$type": "color" },
       "warning": { "$value": "{primitive.color.yellow.500}", "$type": "color" },
       "danger": { "$value": "{primitive.color.red.500}", "$type": "color" }
