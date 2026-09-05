@@ -19,6 +19,10 @@ out, and why. Read this before assuming a gap is a bug.
   before the roll, revealed after, independently re-hashable by the player. This proves the
   verifiability *shape* the on-chain version needs; see "Deliberately simplified" for what's
   different about the real thing.
+- **Marketplace / direct purchase** (§7): buy a specific tool model at a fixed USDC price
+  instead of gambling — `TIER.directPriceUSDC` in `web/src/data.js` ($8/$35/$180/$650 by
+  rarity), priced above blind-box expected value on purpose so boxes still win on price
+  (§14.1). This was designed in §7 from the start but not built until the visual pass.
 - **Two mining nodes** (§6): Surface Quarry (T1, any tool) and Iron Cut (T2, Rare+ tool),
   including the sub-30%-durability yield penalty (§4.4).
 - **Ore economy**: shift yield by rarity multiplier and node, SLP costs for repair/Fusion,
