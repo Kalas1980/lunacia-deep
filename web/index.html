@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Lunacia Deep — Prototype</title>
-  <link rel="stylesheet" href="style.css?v=12" />
+  <link rel="stylesheet" href="style.css?v=13" />
 </head>
 <body>
   <header class="topbar hero-banner">
@@ -53,6 +53,18 @@
       <div id="box-list" class="box-list"></div>
     </section>
 
+    <section class="panel">
+      <h2>Refinery <span class="muted small">§5.1</span></h2>
+      <p class="muted small">
+        Smelted from ore, not bought — same odds shape as Blind Boxes, just paid in ore.
+        Owning one boosts every shift's yield (best Refinery only, doesn't stack). It has its
+        own durability, repairable in SLP or ore, no roll — it never breaks, just goes idle.
+      </p>
+      <div id="smelt-list" class="box-list"></div>
+      <h3 class="refinery-owned-head">Owned</h3>
+      <div id="refinery-list" class="tool-list"></div>
+    </section>
+
     <section class="panel span-2">
       <h2>Marketplace</h2>
       <p class="muted small">Direct purchase (§7) — buy the exact tool you want at a fixed
@@ -70,6 +82,6 @@
 
   <div id="modal-root"></div>
 
-  <script type="module" src="src/main.js?v=12"></script>
+  <script type="module" src="src/main.js?v=13"></script>
 </body>
 </html>

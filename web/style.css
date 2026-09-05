@@ -101,6 +101,7 @@ button.pill-btn { padding: 5px 10px; font-size: 0.78rem; border-radius: 999px; }
   padding: 16px;
 }
 .panel h2 { margin: 0 0 10px; font-size: 1rem; }
+.refinery-owned-head { margin: 14px 0 8px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
 .muted { color: var(--muted); }
 .small { font-size: 0.8rem; }
 
@@ -223,6 +224,13 @@ button.pill-btn { padding: 5px 10px; font-size: 0.78rem; border-radius: 999px; }
 .card-title { font-weight: 600; }
 .card-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 .node-req { color: var(--muted); font-size: 0.8rem; }
+
+/* ---- Nodes: a photo header, same "reads like a game, not a spec sheet" treatment
+   already applied to Blind Boxes and the Refinery — art first, numbers second. ---- */
+.node-card { padding: 0; overflow: hidden; }
+.node-art { display: block; width: 100%; height: 130px; object-fit: cover; }
+.node-body { padding: 12px; }
+.node-flavor { font-style: italic; color: var(--muted); font-size: 0.8rem; margin: 4px 0 8px; }
 
 /* ---- Blind boxes: each tier visually distinct, not three copies of the same card ---- */
 .box-card { border-width: 1px; border-style: solid; border-radius: 12px; padding: 14px; }

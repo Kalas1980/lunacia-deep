@@ -1,7 +1,7 @@
 // Pure functions implementing docs/DESIGN.md §2.4, §2.5, §4, §6, §7.
 // No DOM, no I/O — importable directly by test/economy.test.js.
 
-import { TIER, WORN_THRESHOLD, MODELS, FUSION_RESTORE_FRACTION, fusionFee, fusionFeeAXS } from './data.js?v=12';
+import { TIER, WORN_THRESHOLD, MODELS, FUSION_RESTORE_FRACTION, fusionFee, fusionFeeAXS, REFINERY_MULT } from './data.js?v=13';
 
 export function clamp(x, lo, hi) {
   return Math.max(lo, Math.min(hi, x));
@@ -109,10 +109,22 @@ export function reforge(toolA, toolB, roll, modelRoll = roll) {
   return { outcome, tool: { rarity: mintRarity, model, durability: 100, maxDurability: 100, repairCount: 0 } };
 }
 
-// §6 shift yield, including the §4.4 sub-30%-durability penalty.
-export function shiftYield(tool, node) {
+// §6 shift yield, including the §4.4 sub-30%-durability penalty and the §5.1 Refinery
+// multiplier (defaults to 1.0 — a wallet with no active Refinery mines exactly as before).
+export function shiftYield(tool, node, refineryMult = 1.0) {
   const penalty = tool.durability < 30 ? 0.5 : 1.0;
-  return Math.round(node.oreBase * TIER[tool.rarity].yieldMult * penalty);
+  return Math.round(node.oreBase * TIER[tool.rarity].yieldMult * penalty * refineryMult);
+}
+
+// §5.1 — only the best *active* (durability > 0) Refinery applies; a Broken-durability one
+// sits idle until repaired rather than being removed, same non-destructive spirit as a
+// Tool's immortal floor (§4.2), just without the roll.
+export function bestRefineryMult(refineries) {
+  const RANK = { common: 0, rare: 1, epic: 2, mystic: 3 };
+  const active = refineries.filter((r) => r.durability > 0);
+  if (active.length === 0) return 1.0;
+  const best = active.reduce((a, b) => (RANK[b.rarity] > RANK[a.rarity] ? b : a));
+  return REFINERY_MULT[best.rarity];
 }
 
 export function drainDurability(tool, node) {

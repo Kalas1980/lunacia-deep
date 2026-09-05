@@ -3,14 +3,17 @@
 // even after the importing file itself was freshly fetched, since ES module caching is
 // keyed per exact URL and nested imports don't inherit their importer's cache-bust. Bump
 // this alongside style.css's ?v= in index.html whenever any web/src/*.js file changes.
-import { RARITIES, MODELS, TRAITS, TIER, BOXES, NODES, DEMO_SHIFT_MS, fusionFee, fusionFeeAXS } from './data.js?v=12';
+import {
+  RARITIES, MODELS, TRAITS, TIER, BOXES, NODES, DEMO_SHIFT_MS, fusionFee, fusionFeeAXS,
+  SMELTS, REFINERY_MULT, REFINERY_MAX_DURABILITY, refineryRepairCostSLP, refineryRepairCostOre,
+} from './data.js?v=13';
 import {
   repairCostSLP, repairSuccessChance, rollRepair, isBroken, isWorn,
-  fusionRepair, reforgeOdds, reforge, shiftYield, drainDurability, pickModel,
-} from './economy.js?v=12';
-import { loadState, saveState, resetState, logEvent, getTool, ownedModels } from './state.js?v=12';
-import { randomSeed, sha256Hex, makeRoller, weightedPick } from './rng.js?v=12';
-import { toolIconSVG, boxIconSVG } from './icons.js?v=12';
+  fusionRepair, reforgeOdds, reforge, shiftYield, drainDurability, pickModel, bestRefineryMult,
+} from './economy.js?v=13';
+import { loadState, saveState, resetState, logEvent, getTool, ownedModels } from './state.js?v=13';
+import { randomSeed, sha256Hex, makeRoller, weightedPick } from './rng.js?v=13';
+import { toolIconSVG, boxIconSVG, refineryIconSVG } from './icons.js?v=13';
 
 const RARITY_RANK = { common: 0, rare: 1, epic: 2, mystic: 3 };
 let state = loadState();
@@ -68,6 +71,7 @@ function render() {
   renderTools();
   renderNodes();
   renderBoxes();
+  renderRefinery();
   renderMarketplace();
   renderLog();
 }
@@ -160,11 +164,15 @@ function renderToolCard(tool) {
 function renderNodes() {
   const list = document.getElementById('node-list');
   list.innerHTML = Object.entries(NODES).map(([key, n]) => `
-    <div class="card">
-      <div class="card-head"><span class="card-title">${n.name}</span></div>
-      <p class="node-req">Durability drain ${n.durabilityDrain}/shift · base ore ${n.oreBase} ·
-      ${n.minRarity ? `requires ${n.minRarity}+ tool` : 'any tool'} ·
-      demo shift length ${DEMO_SHIFT_MS[key] / 1000}s</p>
+    <div class="card node-card">
+      <img class="node-art" src="${n.image}" alt="${n.name}" />
+      <div class="node-body">
+        <div class="card-head"><span class="card-title">${n.name}</span></div>
+        <p class="node-flavor">${n.flavor}</p>
+        <p class="node-req">Durability drain ${n.durabilityDrain}/shift · base ore ${n.oreBase} ·
+        ${n.minRarity ? `requires ${n.minRarity}+ tool` : 'any tool'} ·
+        demo shift length ${DEMO_SHIFT_MS[key] / 1000}s</p>
+      </div>
     </div>`).join('');
 }
 
@@ -193,6 +201,118 @@ function renderBoxes() {
       <div class="card-actions"><button data-action="buy-box" data-box="${key}" class="primary" ${state.usdc < b.priceUSDC ? 'disabled' : ''}>Open — $${b.priceUSDC}</button></div>
     </div>`;
   }).join('');
+}
+
+// §5.1 — smelting recipe cards (identical shape to renderBoxes, paid in ore not USDC) plus
+// the wallet's owned Refineries with their durability + dual-currency repair.
+function renderRefinery() {
+  const smeltList = document.getElementById('smelt-list');
+  smeltList.innerHTML = Object.entries(SMELTS).map(([key, s]) => {
+    const activeRarities = RARITIES.filter((r) => s.odds[r] > 0);
+    const oddsStr = activeRarities.map((r) => `${r} ${(s.odds[r] * 100).toFixed(1)}%`).join(' · ');
+    const segments = activeRarities
+      .map((r) => `<div class="seg ${r}" style="flex-grow:${s.odds[r]}" title="${r} ${(s.odds[r] * 100).toFixed(1)}%"></div>`)
+      .join('');
+    const legend = activeRarities
+      .map((r) => `<span><i class="dot ${r}"></i>${r} ${(s.odds[r] * 100).toFixed(1)}%</span>`)
+      .join('');
+    const tint = { basic: 'common', refined: 'rare', deep: 'epic' }[key];
+    return `
+    <div class="box-card ${key}">
+      <div class="card-head">
+        <div class="icon-wrap box" title="Exact odds — ${oddsStr}">${refineryIconSVG(tint, 30)}</div>
+        <div><div class="box-name">${s.name}</div></div>
+      </div>
+      <p class="box-flavor">${s.flavor}</p>
+      <div class="rarity-bar">${segments}</div>
+      <div class="rarity-legend">${legend}</div>
+      <div class="card-actions"><button data-action="smelt" data-recipe="${key}" class="primary" ${state.ore < s.oreCost ? 'disabled' : ''}>Smelt — ${s.oreCost} ore</button></div>
+    </div>`;
+  }).join('');
+
+  const list = document.getElementById('refinery-list');
+  if (state.refineries.length === 0) {
+    list.innerHTML = '<p class="muted small">No Refineries yet — smelt one above to boost every shift\'s ore yield.</p>';
+    return;
+  }
+  const mult = bestRefineryMult(state.refineries);
+  list.innerHTML = state.refineries.map((r) => {
+    const idle = r.durability <= 0;
+    const durClass = idle ? 'broken' : r.durability < 30 ? 'crit' : r.durability < 60 ? 'low' : 'ok';
+    const isBest = !idle && REFINERY_MULT[r.rarity] === mult;
+    const costSLP = refineryRepairCostSLP(REFINERY_MAX_DURABILITY - r.durability, r.rarity);
+    const costOre = refineryRepairCostOre(REFINERY_MAX_DURABILITY - r.durability);
+    const canRepair = r.durability < REFINERY_MAX_DURABILITY;
+    return `
+    <div class="item-tile ${r.rarity}">
+      ${idle ? '<span class="status-badge tag status-broken">Idle</span>' : isBest ? `<span class="status-badge tag ${r.rarity}">Active ×${REFINERY_MULT[r.rarity].toFixed(2)}</span>` : ''}
+      <div class="icon-wrap ${r.rarity}" title="${r.rarity} Refinery — ×${REFINERY_MULT[r.rarity].toFixed(2)} shift yield while active">${refineryIconSVG(r.rarity, 28)}</div>
+      <div class="durbar-wrap" style="width:100%">
+        <div class="durbar-track"><div class="durbar-fill ${durClass}" style="width:${Math.max(0, r.durability)}%"></div></div>
+        <div class="durbar-label"><span>${r.durability}/${REFINERY_MAX_DURABILITY}</span></div>
+      </div>
+      <div class="tile-actions">
+        ${canRepair ? `<button data-action="refinery-repair-slp" data-refinery="${r.id}" class="pill-btn" title="Deterministic, always succeeds">Repair (${costSLP} SLP)</button>` : ''}
+        ${canRepair ? `<button data-action="refinery-repair-ore" data-refinery="${r.id}" class="pill-btn" title="Deterministic, always succeeds">Repair (${costOre} ore)</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function doSmelt(recipeKey) {
+  const recipe = SMELTS[recipeKey];
+  if (state.ore < recipe.oreCost) return;
+  state.ore -= recipe.oreCost;
+  const seed = randomSeed();
+  const nonce = state.nextRefineryId;
+  sha256Hex(`${seed}:${nonce}`).then((commit) => {
+    showModal(`
+      <h3>${recipe.name} — Seed committed</h3>
+      <p>Commit hash (published before the roll, per §7's pattern):</p>
+      <div class="hash">${commit}</div>
+      <p class="muted small">Smelt to reveal the seed — you can re-hash it yourself and confirm it matches.</p>
+      <div class="card-actions"><button id="smelt-btn" class="primary">Smelt</button></div>`);
+    document.getElementById('smelt-btn').addEventListener('click', async () => {
+      const roller = await makeRoller(seed, nonce);
+      const rarity = weightedPick(recipe.odds, roller());
+      const refinery = { id: state.nextRefineryId++, rarity, durability: REFINERY_MAX_DURABILITY, maxDurability: REFINERY_MAX_DURABILITY };
+      state.refineries.push(refinery);
+      logEvent(state, `${recipe.name} → ${rarity.toUpperCase()} Refinery (×${REFINERY_MULT[rarity].toFixed(2)} shift yield while active).`);
+      showModal(`
+        <h3>${recipe.name} — Revealed</h3>
+        <div class="reveal-stage">
+          <div class="reveal-glow ${rarity}" title="${rarity} Refinery">${refineryIconSVG(rarity, 40)}</div>
+          <span class="tag ${rarity}">${rarity}</span>
+        </div>
+        <p class="muted small">Seed: <span class="hash">${seed}</span>nonce ${nonce} — hash this yourself to verify it matches the commit above.</p>
+        <div class="card-actions"><button data-action="close-modal" class="primary">Nice</button></div>`);
+      saveState(state);
+      render();
+    }, { once: true });
+    saveState(state);
+    render();
+  });
+}
+
+function doRefineryRepair(refineryId, currency) {
+  const r = state.refineries.find((x) => x.id === refineryId);
+  if (!r) return;
+  const missing = REFINERY_MAX_DURABILITY - r.durability;
+  if (currency === 'slp') {
+    const cost = refineryRepairCostSLP(missing, r.rarity);
+    if (state.slp < cost) { logEvent(state, `Not enough SLP to repair Refinery (need ${cost}).`); saveState(state); render(); return; }
+    state.slp -= cost;
+    r.durability = REFINERY_MAX_DURABILITY;
+    logEvent(state, `Repaired ${r.rarity} Refinery to full. (-${cost} SLP)`);
+  } else {
+    const cost = refineryRepairCostOre(missing);
+    if (state.ore < cost) { logEvent(state, `Not enough ore to repair Refinery (need ${cost}).`); saveState(state); render(); return; }
+    state.ore -= cost;
+    r.durability = REFINERY_MAX_DURABILITY;
+    logEvent(state, `Repaired ${r.rarity} Refinery to full. (-${cost} ore)`);
+  }
+  saveState(state);
+  render();
 }
 
 function renderLog() {
@@ -261,12 +381,14 @@ function doCollect(toolId) {
   if (!tool || !shift) return;
   if (Date.now() < shift.startedAt + shift.durationMs) return;
   const node = NODES[shift.nodeKey];
-  const ore = shiftYield(tool, node);
+  const refineryMult = bestRefineryMult(state.refineries);
+  const ore = shiftYield(tool, node, refineryMult);
   state.ore += ore;
   const drained = drainDurability(tool, node);
   Object.assign(tool, drained);
   state.activeShifts = state.activeShifts.filter((sh) => sh.toolId !== toolId);
-  logEvent(state, `${tool.model} finished at ${node.name}: +${ore} ore. Durability now ${tool.durability}/${tool.maxDurability}${isBroken(tool) ? ' — BROKEN, needs Fusion Repair' : ''}.`);
+  const boostNote = refineryMult > 1 ? ` (Refinery ×${refineryMult.toFixed(2)})` : '';
+  logEvent(state, `${tool.model} finished at ${node.name}: +${ore} ore${boostNote}. Durability now ${tool.durability}/${tool.maxDurability}${isBroken(tool) ? ' — BROKEN, needs Fusion Repair' : ''}.`);
   saveState(state);
   render();
 }
@@ -486,6 +608,9 @@ document.addEventListener('click', (e) => {
   else if (action === 'buy-box') doBuyBox(el.dataset.box);
   else if (action === 'market-tab') { marketFilter = el.dataset.rarity; renderMarketplace(); }
   else if (action === 'buy-direct') doBuyDirect(el.dataset.model, el.dataset.rarity);
+  else if (action === 'smelt') doSmelt(el.dataset.recipe);
+  else if (action === 'refinery-repair-slp') doRefineryRepair(Number(el.dataset.refinery), 'slp');
+  else if (action === 'refinery-repair-ore') doRefineryRepair(Number(el.dataset.refinery), 'ore');
   else if (action === 'close-modal') { if (e.target === el) closeModal(); }
 });
 

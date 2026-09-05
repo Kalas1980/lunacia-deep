@@ -22,6 +22,13 @@ export function boxIconSVG(boxKey, sizePx = 40) {
   return `<img src="assets/boxes/${slug}.png" width="${sizePx}" height="${sizePx}" alt="${boxKey}" style="object-fit:contain;" />`;
 }
 
+// Refinery NFTs (§5.1) stay hand-drawn SVG rather than spending generation credits on a
+// second art pass — a furnace arch with a glowing shard, tinted by the existing rarity CSS
+// vars (--c-common/rare/epic/mystic) instead of needing per-rarity raster variants.
+export function refineryIconSVG(rarity = 'common', sizePx = 32) {
+  return `<svg viewBox="0 0 24 24" width="${sizePx}" height="${sizePx}" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--c-${rarity})"><path d="M5 20h14M6 20V10a6 6 0 0112 0v10" stroke-width="1.5"/><path d="M12 7l2.2 3.2L12 13.4 9.8 10.2z" fill="currentColor" stroke="none"/></svg>`;
+}
+
 const CURRENCY = {
   usdc: '<circle cx="12" cy="12" r="9"/><path d="M12 6v12M9 9.5a2.5 2.5 0 012.5-1h1a2.5 2.5 0 010 5h-1a2.5 2.5 0 000 5h1a2.5 2.5 0 002.5-1" stroke-width="1.25"/>',
   ore: '<path d="M12 2l7 5-2 9-5 4-5-4-2-9z"/><path d="M12 2v18M5 7l7 3 7-3" stroke-width="0.75"/>',

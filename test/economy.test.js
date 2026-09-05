@@ -12,6 +12,7 @@ import {
   reforgeOdds,
   reforge,
   shiftYield,
+  bestRefineryMult,
   drainDurability,
   pickModel,
 } from '../web/src/economy.js';
@@ -138,6 +139,27 @@ test('shiftYield: applies §4.4 sub-30%-durability penalty', () => {
   const y1 = shiftYield(healthy, NODES.t1);
   const y2 = shiftYield(low, NODES.t1);
   assert.equal(y2, Math.round(y1 * 0.5));
+});
+
+test('shiftYield: §5.1 Refinery multiplier applies on top of the durability penalty', () => {
+  const healthy = freshTool('rare', { durability: 100 });
+  const base = shiftYield(healthy, NODES.t1);
+  const boosted = shiftYield(healthy, NODES.t1, 1.35);
+  assert.equal(boosted, Math.round(base * 1.35));
+  assert.equal(shiftYield(healthy, NODES.t1), base); // default stays 1.0, no Refinery owned
+});
+
+test('bestRefineryMult: §5.1 — picks the highest-rarity ACTIVE Refinery, ignores idle (0-durability) ones', () => {
+  assert.equal(bestRefineryMult([]), 1.0);
+  assert.equal(bestRefineryMult([{ rarity: 'rare', durability: 50 }]), 1.15);
+  assert.equal(
+    bestRefineryMult([{ rarity: 'rare', durability: 50 }, { rarity: 'mystic', durability: 0 }]),
+    1.15, // the Mystic is idle at 0 durability — Rare's bonus applies instead
+  );
+  assert.equal(
+    bestRefineryMult([{ rarity: 'common', durability: 10 }, { rarity: 'epic', durability: 5 }]),
+    1.35,
+  );
 });
 
 test('drainDurability: never goes below 0', () => {

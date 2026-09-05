@@ -28,9 +28,17 @@ out, and why. Read this before assuming a gap is a bug.
   rarity), priced above blind-box expected value on purpose so boxes still win on price
   (§14.1). This was designed in §7 from the start but not built until the visual pass.
 - **Two mining nodes** (§6): Surface Quarry (T1, any tool) and Iron Cut (T2, Rare+ tool),
-  including the sub-30%-durability yield penalty (§4.4).
-- **Ore economy**: shift yield by rarity multiplier and node, SLP costs for repair/Fusion,
-  all pulled from the exact formulas in the design doc, not approximated.
+  including the sub-30%-durability yield penalty (§4.4), each with its own AI-generated
+  scene art (`web/assets/nodes/`) instead of a bare text card.
+- **Refinery NFTs** (§5.1): smelted from ore via the same commit–reveal odds shape as blind
+  boxes (`SMELTS` in `web/src/data.js`, mirrors `BOXES` exactly, just priced in ore). Owning
+  one applies its rarity's `REFINERY_MULT` (×1.00–×1.60) directly to shift ore yield — only
+  the best *active* (non-zero-durability) Refinery counts, they don't stack. Own durability,
+  repairable in SLP or ore, deterministic (no roll) — see "Deliberately simplified" for how
+  this differs from §5.1's pro-rata-pool framing.
+- **Ore economy**: shift yield by rarity multiplier, node, and Refinery multiplier; SLP
+  costs for repair/Fusion; all pulled from the exact formulas in the design doc, not
+  approximated.
 
 ## Deliberately simplified — and why that's fine for Round 1
 
@@ -41,6 +49,8 @@ out, and why. Read this before assuming a gap is a bug.
 | **Salvage** | Flat ore refund | §2.3's Gears/Alloy/Circuit crafting-material system isn't built. A Worn tool still has a real exit, just not the full materials economy. |
 | **Rare's Reforge "upgrade"** | Degrades to a same-tier "match" | §2.4 requires a Master Blueprint (a rare T3/T4 drop) for Rare→Epic. There's no blueprint item in this prototype, so rather than silently minting a free Epic, the outcome honestly downgrades and says why in the code comment. |
 | **Genesis, Ascension, Standing Orders, T3–T5 nodes, Materials/Permits, Axie crews** | Not implemented | Round 1 asks for a prototype and a vision, not the full game (§11's Phase 2–4 scope). These are meta/endgame systems layered on top of the loop this prototype proves; the design for all of them is already written in `docs/DESIGN.md`. |
+| **Refinery's §5.1 pro-rata-pool boost** | Applied directly to shift ore yield instead | This prototype never implemented the daily pro-rata AXS/RON/SLP pool §5 describes — mining pays ore straight to the wallet. There's no pool to boost, so `REFINERY_MULT` multiplies shift yield instead (`bestRefineryMult()` in `web/src/economy.js`). Same economic shape (a personal efficiency multiplier that can't inflate total emission, since there's no pool here to inflate), applied to the one income mechanism that actually exists. |
+| **Refinery durability drain** | Per shift collected, not per calendar day | §5.1 says "−1 per daily refine-claim," but this prototype has no daily cadence (shifts run in seconds, §1's compression). Draining on shift-collect is the closest existing event to "a claim." |
 
 ## Not implemented — deferred to registration, not to laziness
 
@@ -54,11 +64,15 @@ out, and why. Read this before assuming a gap is a bug.
 - ~~Generated visual art — deliberately lowest priority~~ **Done, and now in scope.** All
   **30 tool models** + **3 blind-box crates** are AI-generated (Higgsfield/Recraft,
   pixel-art style, backgrounds removed, `web/assets/tools/` and `web/assets/boxes/`), plus
-  one hero banner (`web/assets/ui/banner.jpg`). No mascots or full scene art beyond that
-  banner. Original, non-Axie imagery throughout — readable as Lunacia Deep's own gear, not a
-  copy of specific copyrighted Axie character art (same non-derivative-design principle
-  already applied to CardChain PH). This isn't blocked on Vibeathon registration: **the
-  Ronin/Axie Builders Program (Appendix A) is the real target** if the Vibeathon window
+  the **2 mining-node scenes** (`web/assets/nodes/`, full-scene JPEGs, no background removal
+  needed) and one hero banner (`web/assets/ui/banner.jpg`). Refinery NFTs (§5.1) deliberately
+  stay hand-drawn SVG, not raster — a simple rarity-tinted furnace icon
+  (`refineryIconSVG` in `web/src/icons.js`) rather than spending generation credits on a
+  fourth art pass for an abstract "efficiency booster" concept that doesn't need a scene or
+  a collectible model. Original, non-Axie imagery throughout — readable as Lunacia Deep's
+  own gear, not a copy of specific copyrighted Axie character art (same non-derivative-design
+  principle already applied to CardChain PH). This isn't blocked on Vibeathon registration:
+  **the Ronin/Axie Builders Program (Appendix A) is the real target** if the Vibeathon window
   closes, and this art is useful in that pitch regardless of which door we go through.
 - **Ronin/blockchain integration.** No wallet connect, no on-chain contracts, no real
   tokens. `docs/DESIGN.md` §15 (the validation plan) explicitly calls for this exact kind

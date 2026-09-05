@@ -1,7 +1,7 @@
 // Minimal game state + localStorage persistence. No framework — plain objects, one
 // module-level store, explicit save() calls. Fine at this scale; a real client would
 // swap this for whatever the chosen frontend stack uses, per docs/DESIGN.md §10.
-import { MAX_DURABILITY_START } from './data.js?v=12';
+import { MAX_DURABILITY_START } from './data.js?v=13';
 
 const STORAGE_KEY = 'lunacia-deep-prototype-v1';
 
@@ -17,6 +17,8 @@ function starterState() {
       { id: 1, rarity: 'common', model: 'Hand Shovel', durability: 100, maxDurability: MAX_DURABILITY_START, repairCount: 0 },
       { id: 2, rarity: 'common', model: 'Field Spade', durability: 100, maxDurability: MAX_DURABILITY_START, repairCount: 0 },
     ],
+    nextRefineryId: 1,
+    refineries: [], // §5.1 — { id, rarity, durability, maxDurability }, no model (one shared ladder)
     activeShifts: [], // { toolId, nodeKey, startedAt, durationMs }
     log: [],
   };

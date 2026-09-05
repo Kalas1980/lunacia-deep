@@ -96,10 +96,64 @@ export const BOXES = {
   },
 };
 
+// §5.1 Refinery NFTs — smelted from ore, same odds shape as blind boxes (§7), just paid in
+// ore instead of USDC. One shared rarity ladder (§13 open question 7), not per-token.
+export const SMELTS = {
+  basic: {
+    name: 'Basic Smelt',
+    flavor: 'A backyard bloomery. Mostly slag, occasionally something worth keeping.',
+    oreCost: 150,
+    odds: { common: 0.82, rare: 0.165, epic: 0.014, mystic: 0.001 },
+  },
+  refined: {
+    name: 'Refined Smelt',
+    flavor: 'Iron and dust, fed hot. Built for someone who plans to keep mining.',
+    oreCost: 400,
+    odds: { common: 0.42, rare: 0.46, epic: 0.11, mystic: 0.01 },
+  },
+  deep: {
+    name: 'Deep Smelt',
+    flavor: 'Silver and moonstone in the mix. It runs hotter than it should.',
+    oreCost: 900,
+    odds: { common: 0, rare: 0.55, epic: 0.38, mystic: 0.07 },
+  },
+};
+
+// §5.1 — modest, deliberately: a Refinery bonus stacks on top of Tool yieldMult *and* Axie
+// class bonuses (§3), so this multiplies shift ore yield directly rather than a whole new
+// curve. Only the wallet's single best (highest-rarity, non-zero-durability) Refinery
+// applies — owning several doesn't stack (§5.1 describes "your Refinery", singular).
+export const REFINERY_MULT = { common: 1.00, rare: 1.15, epic: 1.35, mystic: 1.60 };
+export const REFINERY_MAX_DURABILITY = 100;
+
+// §5.1 repair — deterministic, no roll (a Refinery is a passive multiplier, not a piloted
+// risk/reward asset like a Tool, §4.2). Reuses Tool tierRate for the SLP route rather than
+// inventing a second rate table — no evidence yet that Refineries need to cost differently.
+export function refineryRepairCostSLP(missing, rarity) {
+  return Math.round(missing * TIER[rarity].tierRate);
+}
+export function refineryRepairCostOre(missing) {
+  return missing * 4;
+}
+
 // §6 nodes — T1/T2 only in this prototype (T3+ need Depth Permits, out of scope for Round 1).
 export const NODES = {
-  t1: { name: 'Surface Quarry', durabilityDrain: 1, oreBase: 100, minRarity: null },
-  t2: { name: 'Iron Cut', durabilityDrain: 2, oreBase: 260, minRarity: 'rare' },
+  t1: {
+    name: 'Surface Quarry',
+    flavor: 'Sun-bleached stone and switchback ladders. Where every miner starts.',
+    image: 'assets/nodes/surface-quarry.jpg',
+    durabilityDrain: 1,
+    oreBase: 100,
+    minRarity: null,
+  },
+  t2: {
+    name: 'Iron Cut',
+    flavor: 'A torchlit seam cut deep into the rock. The rails go further than the light does.',
+    image: 'assets/nodes/iron-cut.jpg',
+    durabilityDrain: 2,
+    oreBase: 260,
+    minRarity: 'rare',
+  },
 };
 
 // Demo-only time compression. The real design runs 8h shifts (§1) — compressed here so a
