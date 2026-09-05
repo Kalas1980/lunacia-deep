@@ -487,6 +487,7 @@ another Broken one) as fuel.
 |---|---|
 | **Fuel required** | 1 tool, same rarity as the Broken tool. Model doesn't matter — 10 Commons and 10 Rares are all valid fuel for each other; likewise the 5 Epics or 5 Mystics. |
 | **SLP fee** | `20 × tierRate` — Common 40, Rare 120, Epic 320, Mystic 600. Small next to the value of the burned fuel tool; still routed through the 65/25/10 split (§4.4), so it's still an SLP sink. |
+| **AXS/bAXS toll (Epic & Mystic only)** | Flat, not scaled by durability — **Epic 0.05, Mystic 0.15**, paid in **bAXS**, on top of the SLP fee above. Common/Rare fusion stays SLP-only. |
 | **Result** | Current durability restored to **50% of the surviving tool's `maxDurability`.** Deterministic — no roll, no RNG. `maxDurability` is untouched by the fusion itself. |
 | **Rarity** | Never changes. Fusion repairs the tool you have; it does not re-roll it. |
 | **Genesis** | **Exempt.** Genesis repairs never fail (§2.6) and there are only ~100–130 of them ever (§2.6–§2.7) — requiring a second one as fuel would make the flagship asset occasionally undiggable by design. Genesis simply cannot go Broken. |
@@ -502,6 +503,32 @@ apart:**
 | Rarity | Unchanged | Re-rolled (§2.4's odds table) |
 | Outcome | Deterministic partial restore | Probabilistic — upgrade / match / flaw |
 | Eligible tiers | **All tiers** (Genesis exempt) | Common/Rare only as inputs (§2.4) |
+
+**Why Fusion, specifically, is where a scarce token belongs — not the routine SLP repair in
+§4.1.** SLP repair happens constantly and must stay cheap and frictionless, or the core idle
+loop stops feeling idle. Fusion is rare (a tool has to hit 0 first) and already destroys an
+entire second NFT — it can absorb a small toll in a token that must stay scarce under
+Constraint #2 (§0) without touching the loop players do every day. Gating it to **Epic and
+Mystic only** keeps the toll off a new player's very first Fusion (their starter Common
+shovel, or an early Rare) and onto wallets that already hold immortal-tier assets — the
+same reasoning that excludes Common/Rare from repair-cost scaling premiums elsewhere.
+
+**Why bAXS, not a straight AXS burn.** §5's AXS Refinery pays liquid AXS *into* players'
+hands from swapped revenue — that's the faucet. A straight burn on the sink side just fights
+that faucet transaction-for-transaction with no other effect. **bAXS is AXS bonded
+one-way**: converted 1:1, non-transferable, and it never unlocks back to liquid AXS. Economically
+it behaves like a burn (permanently removed from circulating float), but it stays a visible,
+non-zero balance on the wallet — a permanent "AXS bonded" marker, in the same spirit as the
+Founder's Mark cosmetic from a failed Genesis roll (§2.6): the sink leaves the player
+something legible instead of a number vanishing into `0xdead`. If a wallet's repair screen
+needs bAXS it doesn't have, it bonds the shortfall from liquid AXS automatically at the
+point of Fusion — no separate step, but the AXS spent that way never comes back.
+
+> `ponytail:` **bAXS is not a confirmed Sky Mavis token today** — it's this design's proposed
+> mechanic for a one-way AXS bond, not a real Vibeathon-published primitive. Verify against
+> Sky Mavis's actual AXS/bAXS documentation before this becomes a real contract dependency;
+> if no such token exists at build time, fall back to a straight AXS burn (same economic
+> effect, minus the cosmetic "bonded" balance) rather than inventing an unverified token.
 
 **Why Fusion applies to Epic and Mystic too, even though they're immortal.** Immortality
 in §4.2 was always about `maxDurability` never bottoming out below 40 — it was never a
@@ -547,6 +574,87 @@ floats, and everyone can see why.
 | **SLP Refinery** | Stone Dust (T1–T2 nodes, abundant) | 65% of all repair SLP (§4) |
 | **RON Refinery** | Iron / Silver "Ronin Ore" (T2–T4) | 25% of trailing-7d net revenue, swapped to RON |
 | **AXS Refinery** | Moonstone / *Axieite* (T4–T5 only, rare) | 10% of trailing-7d net revenue, swapped to AXS |
+
+### 5.1 Refinery NFTs — personal efficiency, smelted not bought
+
+A **Refinery** is a second NFT type, separate from Tools (§2.1): it doesn't mine, it boosts
+how much of your submitted ore actually converts to AXS/RON/SLP in the pro-rata pools above.
+Same rarity ladder as Tools — Common/Rare/Epic/Mystic — **one shared ladder**, not three
+separate Refinery collections per token. Which refinery you feed stays a submission choice,
+not a second inventory to manage. *(Open question, §13: three per-token ladders would let
+players specialise into "an AXS Refinery" the way Tools specialise into models, at the cost
+of tripling the art, the smelting recipes, and the Codex surface area. One shared ladder is
+the leaner build and is what the numbers below assume — confirm before the contract locks.)*
+
+**Smelted, not bought — reuses the blind-box machinery wholesale.** A Refinery is never
+purchased with USDC. It's crafted by burning ore in a **Smelting Attempt**, using the exact
+same commit–reveal roll and rarity-odds shape as blind boxes (§7), just paid in ore instead
+of money:
+
+| Smelting recipe | Ore cost | Common | Rare | Epic | Mystic |
+|---|---|---|---|---|---|
+| **Basic Smelt** | 150 Dust | 82% | 16.5% | 1.4% | 0.1% |
+| **Refined Smelt** | 400 Dust/Iron mix | 42% | 46% | 11% | 1% |
+| **Deep Smelt** | 900 incl. Silver/Moonstone | — | 55% | 38% | 7% |
+
+Identical odds tables to §7's three boxes, on purpose — no new balancing surface, and a
+player who already reads "Deep Vault odds" reads "Deep Smelt odds" for free.
+
+**Efficiency bonus — modest, because it stacks with everything else.** A Refinery multiplies
+the *shards a player submits*, not the pool itself:
+
+```
+your_payout = daily_pool × (your_shards_submitted × refineryMult / Σ all effective shards)
+```
+
+| Rarity | refineryMult |
+|---|---|
+| Common | ×1.00 — no bonus, the baseline |
+| Rare | ×1.15 |
+| Epic | ×1.35 |
+| Mystic | ×1.60 |
+
+Deliberately modest, not another 2.5×/3.5× Tool-style curve — a Refinery bonus already
+stacks on top of Tool `yieldMult` *and* Axie class bonuses (§3), so a Mystic Tool + Mystic
+Refinery + a balanced crew should feel strong, not broken.
+
+**Why this can't break the pool math.** The daily pool is still fixed (§5, above);
+`refineryMult` only changes the numerator each player contributes, and the denominator
+(Σ all effective shards) absorbs it identically — total payout across all players is still
+capped at the published daily pool. Constraint #2 (§0) holds exactly as before. What changes
+is *distribution*, not *emission*: a better Refinery earns a larger slice of a pool that
+isn't any bigger, which is the intended lever, not a leak.
+
+**Durability — its own tank, deliberately simpler than a Tool's.** A Refinery drains 1
+point per daily pool submission (not per shift) and repairs with **SLP or ore — deterministic,
+no roll, no failure**:
+
+| | |
+|---|---|
+| Max durability | 100. Same floor-at-Worn idea doesn't apply — Refineries never retire. |
+| Drain | −1 per daily refine-claim |
+| Repair (SLP route) | `missingDurability × tierRate_refinery` SLP, restores to 100, always succeeds |
+| Repair (ore route) | `missingDurability × 4` ore (any type), restores to 100, always succeeds |
+
+No repair roll here, unlike Tools (§4.2) — a Refinery is a passive multiplier, not something
+a player actively pilots into risk/reward territory, so a failure chance would just be
+friction with no interesting decision behind it. The real decision is the **currency
+choice**: spend ore you could otherwise smelt or refine, or spend SLP you could otherwise
+put toward Tool repairs — a second instance of the resource tradeoff already central to §4.3.
+
+**Why this is worth building at all.** Every mechanic before this one is asset-vs-asset
+(Tools) or activity-vs-activity (nodes, boxes). A Refinery is the first thing in the game
+that rewards *loyalty to a single pool* — smelting AXS Refineries is a bet on Deep-node
+access; smelting SLP Refineries optimizes the loop everyone already runs. That's a real
+strategic axis the design didn't have before, built entirely from parts that already exist
+(the box/commit–reveal contract, the pro-rata formula, the durability/repair pattern) —
+closer to a config change than new systems work, the same spirit as Ascension Seasons
+reusing the Genesis contract (§2.7).
+
+> `ponytail:` smelting ore costs and `refineryMult` are config, not constants — tune both in
+> the Phase 0.5 sim (§15) once real ore-income rates are known. If Refinery smelting starts
+> meaningfully competing with Tool boxes for scarce ore, raise the ore costs; do not nerf the
+> multiplier below the point where owning one feels worth building.
 
 **The payout ratio is 35% of net revenue, published and capped.** Players in aggregate can
 never extract more than 35% of what enters. This is the number that makes the business
@@ -697,6 +805,8 @@ timeline, or the validation gate.
 | Epic supply is immortal → top-tier floor price decays | Low | Sunk by both Fusion Repair (§4.5, ordinary neglect) and the Genesis/Ascension burn (§2.6/§2.7, ~9.2 net per Genesis). Watch the Epic floor weekly. |
 | Mystic is spared from the Genesis/Ascension burn by design (§2.6) → its only sink is Fusion Repair | Medium | This is a known, accepted trade-off, not an oversight — see §2.6's "trade-off, stated plainly." Watch the Mystic floor specifically; if it decays, add a Mystic-specific sink rather than reversing the spare. |
 | Fusion Repair (§4.5) feels punishing rather than fair — a mistake destroys a whole tool | Medium | Standing Orders (§4.3) as a one-toggle prevention; the 30%-durability yield penalty as an early warning; loud low-durability UI alerts before the 0 cliff. Tune the 50%-restore and fee numbers on Phase 0.5 playtester reaction (§15), not in isolation. |
+| Refinery NFTs (§5.1) let capital concentrate pro-rata pool share | Medium | `refineryMult` capped at ×1.60 by design — modest next to Tool `yieldMult`; Refineries are smelted (real ore + RNG), not bought outright, so concentration still costs time and luck. Monitor top-decile pool share weekly, same metric family as whale monitoring elsewhere. |
+| bAXS (§4.5) is a proposed mechanic, not a confirmed Sky Mavis token | Low | Verify against official AXS/bAXS documentation before the Fusion contract locks; fall back to a straight AXS burn (same economic effect) if no such token exists at build time. |
 | Repair-failure rage / "RNG is rigged" accusations | Medium | Published daily seeds and verifiable rolls (§4.4); failure is partial, never total; `pSuccess` floored at 50%; show the odds in the UI *before* the player confirms. |
 | Reforge cannibalises blind box sales | High | Epic/Mystic excluded as inputs; Rare→Epic gated behind Master Blueprint; forge EV per Epic kept above box EV (§2.4). Re-verify in the Phase 0.5 sim (§15). |
 | Commit–reveal seed leak | High | Seed committed pre-sale, HSM/KMS-held, per-series rotation, published post-reveal for verification. |
@@ -723,6 +833,7 @@ timeline, or the validation gate.
 4. Single global economy, or region-partitioned seasons?
 5. Do broken/Worn tools stay tradeable? (Recommend yes — with reforging in §2.4, Worn tools have a real floor price as feedstock, and a scrap market emerges for ~zero engineering.)
 6. Should reforge outcomes use the same commit–reveal randomness as blind boxes (§7)? Recommend yes — same contract path, same auditability, and it is the same trust problem.
+7. Refinery NFTs (§5.1): one shared Common/Rare/Epic/Mystic ladder covering all three refineries, or three separate per-token ladders (a distinct "AXS Refinery" collection vs "SLP Refinery" vs "RON Refinery")? Recommend the shared ladder — it's the leaner build, and the numbers in §5.1 assume it — but a per-token ladder gives players a second axis of specialisation (which pool, not just which rarity) if playtesting shows the shared version feels flat.
 
 ---
 

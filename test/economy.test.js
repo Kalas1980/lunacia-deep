@@ -71,13 +71,26 @@ test('isBroken / isWorn', () => {
 test('fusionRepair: §4.5 — deterministic 50% restore, maxDurability untouched, rarity must match', () => {
   const broken = freshTool('mystic', { durability: 0, maxDurability: 80 });
   const fuel = freshTool('mystic', { durability: 10, maxDurability: 60 });
-  const { tool, feeSLP } = fusionRepair(broken, fuel);
+  const { tool, feeSLP, feeAXS } = fusionRepair(broken, fuel);
   assert.equal(tool.durability, 40); // floor(80 * 0.5)
   assert.equal(tool.maxDurability, 80); // unchanged
   assert.equal(feeSLP, 20 * 30); // 20 * mystic tierRate
+  assert.equal(feeAXS, 0.15); // §4.5 bAXS toll — Mystic
 
   assert.throws(() => fusionRepair(freshTool('common', { durability: 5 }), fuel), /Broken/);
   assert.throws(() => fusionRepair(broken, freshTool('rare')), /same rarity/);
+});
+
+test('fusionRepair: §4.5 AXS/bAXS toll only applies to Epic/Mystic, not Common/Rare', () => {
+  const commonFuel = freshTool('common');
+  const commonBroken = freshTool('common', { durability: 0 });
+  const { feeAXS: commonFee } = fusionRepair(commonBroken, commonFuel);
+  assert.equal(commonFee, 0);
+
+  const epicFuel = freshTool('epic');
+  const epicBroken = freshTool('epic', { durability: 0 });
+  const { feeAXS: epicFee } = fusionRepair(epicBroken, epicFuel);
+  assert.equal(epicFee, 0.05);
 });
 
 test('reforgeOdds: probabilities sum to 1 and move the right direction with condition', () => {

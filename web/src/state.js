@@ -1,7 +1,7 @@
 // Minimal game state + localStorage persistence. No framework — plain objects, one
 // module-level store, explicit save() calls. Fine at this scale; a real client would
 // swap this for whatever the chosen frontend stack uses, per docs/DESIGN.md §10.
-import { MAX_DURABILITY_START } from './data.js';
+import { MAX_DURABILITY_START } from './data.js?v=12';
 
 const STORAGE_KEY = 'lunacia-deep-prototype-v1';
 
@@ -10,6 +10,8 @@ function starterState() {
     ore: 300, // mining OUTPUT only — never spends on boxes (§0's no-money-printer rule)
     usdc: 100, // buys blind boxes (§7) — external revenue stand-in, separate from ore
     slp: 500,
+    axs: 0.5, // small starter balance — Fusion Repair's Epic/Mystic toll (§4.5), scarce by design
+    baxs: 0, // AXS bonded one-way for the Fusion toll — never unlocks back to liquid AXS (§4.5)
     nextToolId: 3,
     tools: [
       { id: 1, rarity: 'common', model: 'Hand Shovel', durability: 100, maxDurability: MAX_DURABILITY_START, repairCount: 0 },

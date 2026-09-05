@@ -8,7 +8,11 @@ out, and why. Read this before assuming a gap is a bug.
 - **Durability, repair-as-a-roll, and Fusion Repair** (§4.1–§4.5). This is the mechanic the
   whole prototype exists to prove out: SLP repair works 1–100 durability, a tool at exactly
   0 goes **Broken** and can only be fixed by burning a same-rarity tool as fuel. One rule,
-  every rarity (Genesis excluded — not in this prototype at all, see below).
+  every rarity (Genesis excluded — not in this prototype at all, see below). Fusing an
+  **Epic or Mystic** tool also bonds a small AXS toll into non-transferable **bAXS**
+  (`web/src/data.js`'s `fusionFeeAXS`) on top of the SLP fee, auto-bonding the shortfall from
+  liquid AXS if the wallet has none yet — see §4.5's "AXS/bAXS toll" for why this sits on
+  Fusion specifically, not on routine SLP repair.
 - **Reforge** (§2.4): burn two same-rarity tools, re-rolled outcome. Common's upgrade mints
   a Rare (blueprint-free per §2.4); Rare's upgrade degrades to a match — see "Deliberately
   simplified" below.
@@ -47,15 +51,15 @@ out, and why. Read this before assuming a gap is a bug.
   licence context is right"), this prototype uses only original, non-Axie visuals until
   we've actually registered. Swapping in the kit is a presentation change, not an
   architecture change — see `web/src/data.js` for where model/rarity data lives.
-- **Generated visual art — deliberately lowest priority, and narrow in scope when it
-  happens.** No banners, mascots, or scene art. Only the **30 tool models** (§2.5) get
-  generated art, via Higgsfield or a cheaper alternative (compare cost before committing —
-  per `feedback-higgsfield-credit-conservation` in memory). Style target is "consistent
-  with the Axie IP" — readable as Lunacia Deep's own gear, not a copy of specific
-  copyrighted Axie character art (same non-derivative-design principle already applied to
-  CardChain PH). This isn't blocked on Vibeathon registration: **the Ronin/Axie Builders
-  Program (Appendix A) is the real target** if the Vibeathon window closes, and tool art
-  is useful in that pitch regardless of which door we go through.
+- ~~Generated visual art — deliberately lowest priority~~ **Done, and now in scope.** All
+  **30 tool models** + **3 blind-box crates** are AI-generated (Higgsfield/Recraft,
+  pixel-art style, backgrounds removed, `web/assets/tools/` and `web/assets/boxes/`), plus
+  one hero banner (`web/assets/ui/banner.jpg`). No mascots or full scene art beyond that
+  banner. Original, non-Axie imagery throughout — readable as Lunacia Deep's own gear, not a
+  copy of specific copyrighted Axie character art (same non-derivative-design principle
+  already applied to CardChain PH). This isn't blocked on Vibeathon registration: **the
+  Ronin/Axie Builders Program (Appendix A) is the real target** if the Vibeathon window
+  closes, and this art is useful in that pitch regardless of which door we go through.
 - **Ronin/blockchain integration.** No wallet connect, no on-chain contracts, no real
   tokens. `docs/DESIGN.md` §15 (the validation plan) explicitly calls for this exact kind
   of blockchain-free prototype as Test #1, before any contract or audit spend — this build

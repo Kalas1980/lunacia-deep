@@ -1,11 +1,16 @@
-import { RARITIES, MODELS, TRAITS, TIER, BOXES, NODES, DEMO_SHIFT_MS, fusionFee } from './data.js';
+// Cache-bust query on every local import: this environment's browser has repeatedly
+// served a stale cached module (e.g. an old icons.js with a different function signature)
+// even after the importing file itself was freshly fetched, since ES module caching is
+// keyed per exact URL and nested imports don't inherit their importer's cache-bust. Bump
+// this alongside style.css's ?v= in index.html whenever any web/src/*.js file changes.
+import { RARITIES, MODELS, TRAITS, TIER, BOXES, NODES, DEMO_SHIFT_MS, fusionFee, fusionFeeAXS } from './data.js?v=12';
 import {
   repairCostSLP, repairSuccessChance, rollRepair, isBroken, isWorn,
   fusionRepair, reforgeOdds, reforge, shiftYield, drainDurability, pickModel,
-} from './economy.js';
-import { loadState, saveState, resetState, logEvent, getTool, ownedModels } from './state.js';
-import { randomSeed, sha256Hex, makeRoller, weightedPick } from './rng.js';
-import { toolIconSVG, boxIconSVG } from './icons.js';
+} from './economy.js?v=12';
+import { loadState, saveState, resetState, logEvent, getTool, ownedModels } from './state.js?v=12';
+import { randomSeed, sha256Hex, makeRoller, weightedPick } from './rng.js?v=12';
+import { toolIconSVG, boxIconSVG } from './icons.js?v=12';
 
 const RARITY_RANK = { common: 0, rare: 1, epic: 2, mystic: 3 };
 let state = loadState();
@@ -13,6 +18,26 @@ let marketFilter = 'common'; // view-only, not persisted — which rarity tab is
 
 function roll() {
   return crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Anticipation length escalates with rarity — Common/Rare are a quick beat, Mystic gets a
+// real buildup. Durations here are the JS side of the CSS animations in style.css and must
+// stay roughly in sync with them (chargeGlow / chargeGlowMystic).
+const OPENING_DURATION_MS = { common: 500, rare: 650, epic: 1100, mystic: 1900 };
+
+function burstParticlesHTML(count = 10, radius = 90) {
+  let html = '';
+  for (let i = 0; i < count; i++) {
+    const angle = (i / count) * 2 * Math.PI;
+    const px = Math.round(Math.cos(angle) * radius);
+    const py = Math.round(Math.sin(angle) * radius);
+    html += `<div class="burst-particle" style="--px:${px}px; --py:${py}px; animation-delay:${(i % 3) * 0.04}s;"></div>`;
+  }
+  return html;
 }
 
 function fmtTime(ms) {
@@ -37,6 +62,8 @@ function render() {
   document.getElementById('ore-balance').textContent = state.ore;
   document.getElementById('usdc-balance').textContent = state.usdc;
   document.getElementById('slp-balance').textContent = state.slp;
+  document.getElementById('axs-balance').textContent = state.axs.toFixed(2);
+  document.getElementById('baxs-balance').textContent = state.baxs.toFixed(2);
   renderCodex();
   renderTools();
   renderNodes();
@@ -56,7 +83,7 @@ function renderCodex() {
       const has = owned.has(model);
       if (has) ownedCount += 1;
       const tooltip = `${model} — ${rarity} — ${TRAITS[model] || ''}`;
-      return `<div class="codex-chip ${rarity} ${has ? 'owned' : ''}" ${has ? `title="${tooltip}"` : ''}>${has ? toolIconSVG(model, 18) : '?'}</div>`;
+      return `<div class="codex-chip ${rarity} ${has ? 'owned' : 'locked'}" ${has ? `title="${tooltip}"` : ''}>${toolIconSVG(model, rarity, 28)}</div>`;
     }).join('');
     return `<div class="codex-tier"><span class="codex-tier-label">${rarity}</span><div class="codex-tier-grid">${chips}</div></div>`;
   }).join('');
@@ -121,7 +148,7 @@ function renderToolCard(tool) {
   return `
     <div class="item-tile ${tool.rarity}">
       ${statusBadge}
-      <div class="icon-wrap ${tool.rarity}" title="${tooltip}">${toolIconSVG(tool.model, 28)}</div>
+      <div class="icon-wrap ${tool.rarity}" title="${tooltip}">${toolIconSVG(tool.model, tool.rarity, 28)}</div>
       <div class="durbar-wrap" style="width:100%">
         <div class="durbar-track"><div class="durbar-fill ${durClass}" style="width:${durPct}%"></div></div>
         <div class="durbar-label"><span>${tool.durability}/${tool.maxDurability}</span></div>
@@ -188,7 +215,7 @@ function renderMarketplace() {
     const have = owned.includes(model);
     return `
     <div class="market-listing">
-      <div class="icon-wrap ${marketFilter}" title="${model} — ${TRAITS[model] || ''}">${toolIconSVG(model, 28)}</div>
+      <div class="icon-wrap ${marketFilter}" title="${model} — ${TRAITS[model] || ''}">${toolIconSVG(model, marketFilter, 28)}</div>
       <div class="price">$${price}</div>
       <button data-action="buy-direct" data-model="${model}" data-rarity="${marketFilter}" class="primary pill-btn" ${state.usdc < price ? 'disabled' : ''}>${have ? 'Buy another' : 'Buy'}</button>
     </div>`;
@@ -208,9 +235,9 @@ function doBuyDirect(model, rarity) {
 
 // ---------- modal helper ----------
 
-function showModal(html) {
+function showModal(html, extraModalClass = '') {
   const root = document.getElementById('modal-root');
-  root.innerHTML = `<div class="modal-backdrop" data-action="close-modal"><div class="modal">${html}</div></div>`;
+  root.innerHTML = `<div class="modal-backdrop" data-action="close-modal"><div class="modal ${extraModalClass}">${html}</div></div>`;
 }
 function closeModal() {
   document.getElementById('modal-root').innerHTML = '';
@@ -278,6 +305,7 @@ function openFusionModal(toolId) {
   const tool = getTool(state, toolId);
   const fuelOptions = state.tools.filter((t) => t.rarity === tool.rarity && t.id !== tool.id);
   const fee = fusionFee(tool.rarity);
+  const feeAXS = fusionFeeAXS(tool.rarity);
   if (fuelOptions.length === 0) {
     showModal(`
       <h3>Fusion Repair — ${tool.model}</h3>
@@ -287,10 +315,16 @@ function openFusionModal(toolId) {
     return;
   }
   const options = fuelOptions.map((f) => `<option value="${f.id}">${f.model} (${f.durability}/${f.maxDurability})</option>`).join('');
+  // Epic/Mystic Fusion also charges bAXS — AXS bonded one-way, never unlocks — to keep AXS
+  // scarce (§4.5). Common/Rare stay SLP-only, matching the Repair Cost table (§4.1).
+  const axsLine = feeAXS > 0
+    ? `<p>Also bonds <b>${feeAXS} AXS → bAXS</b> (one-way, never unlocks — §4.5's scarcity toll on ${tool.rarity} Fusion).</p>`
+    : '';
   showModal(`
     <h3>Fusion Repair — ${tool.model}</h3>
     <p>Burns one <b>${tool.rarity}</b> tool as fuel. Fee: <b>${fee} SLP</b>. Restores current
     durability to 50% of ${tool.model}'s max (${Math.floor(tool.maxDurability / 2)}/${tool.maxDurability}), deterministic.</p>
+    ${axsLine}
     <label>Fuel tool: <select id="fuel-select">${options}</select></label>
     <div class="card-actions">
       <button data-action="fuse-confirm" data-tool="${toolId}" class="primary">Fuse</button>
@@ -303,6 +337,7 @@ function doFuseConfirm(toolId) {
   const fuelId = Number(document.getElementById('fuel-select').value);
   const fuel = getTool(state, fuelId);
   const fee = fusionFee(tool.rarity);
+  const feeAXS = fusionFeeAXS(tool.rarity);
   if (state.slp < fee) {
     logEvent(state, `Not enough SLP for Fusion Repair (need ${fee}).`);
     closeModal();
@@ -310,11 +345,27 @@ function doFuseConfirm(toolId) {
     render();
     return;
   }
+  // bAXS is bonded one-way from liquid AXS on demand — the wallet never needs to pre-bond,
+  // but any AXS spent this way never comes back (§4.5).
+  const baxsShortfall = Math.max(0, feeAXS - state.baxs);
+  if (baxsShortfall > 0 && state.axs < baxsShortfall) {
+    logEvent(state, `Not enough AXS to bond for Fusion (need ${baxsShortfall.toFixed(2)} more).`);
+    closeModal();
+    saveState(state);
+    render();
+    return;
+  }
   const { tool: next } = fusionRepair(tool, fuel);
   state.slp -= fee;
+  if (baxsShortfall > 0) {
+    state.axs -= baxsShortfall;
+    state.baxs += baxsShortfall;
+  }
+  state.baxs -= feeAXS;
   Object.assign(tool, next);
   state.tools = state.tools.filter((t) => t.id !== fuel.id);
-  logEvent(state, `Fused ${fuel.model} into ${tool.model}: restored to ${tool.durability}/${tool.maxDurability}. (-${fee} SLP)`);
+  const axsNote = feeAXS > 0 ? `, -${feeAXS} bAXS` : '';
+  logEvent(state, `Fused ${fuel.model} into ${tool.model}: restored to ${tool.durability}/${tool.maxDurability}. (-${fee} SLP${axsNote})`);
   closeModal();
   saveState(state);
   render();
@@ -370,20 +421,46 @@ async function doBuyBox(boxKey) {
     <p class="muted small">Open to reveal the seed — you'll be able to re-hash it yourself and confirm it matches.</p>
     <div class="card-actions"><button id="open-box-btn" class="primary">Open</button></div>`);
   document.getElementById('open-box-btn').addEventListener('click', async () => {
+    // Roll first (deterministic from the already-committed seed), then let rarity drive
+    // how long and how dramatic the anticipation is — the buildup is honest, not staged;
+    // we already know the outcome, we're just pacing the reveal of it.
     const roller = await makeRoller(seed, nonce);
     const rarity = weightedPick(box.odds, roller());
     const model = pickModel(rarity, ownedModels(state, rarity), roller());
+    const isMystic = rarity === 'mystic';
+
+    showModal(`
+      <div class="opening-stage">
+        <div class="opening-icon ${rarity !== 'common' && rarity !== 'rare' ? rarity : ''}">${boxIconSVG(boxKey, 40)}</div>
+        <p class="opening-label ${isMystic ? 'mystic-label' : ''}">${isMystic ? 'Something powerful stirs...' : 'Opening...'}</p>
+      </div>`);
+    if (isMystic) {
+      // A second beat partway through the buildup — the escalation itself is part of what
+      // makes a Mystic pull feel earned instead of identical to a Common with a bigger glow.
+      await sleep(OPENING_DURATION_MS.mystic * 0.5);
+      const label = document.querySelector('.opening-label');
+      if (label) label.textContent = 'The case can barely hold it...';
+    }
+    await sleep(OPENING_DURATION_MS[rarity]);
+
     const newTool = { id: state.nextToolId++, rarity, model, durability: 100, maxDurability: 100, repairCount: 0 };
     state.tools.push(newTool);
     logEvent(state, `Opened ${box.name} → ${rarity.toUpperCase()} ${model}.`);
+
+    const flash = isMystic ? '<div class="reveal-flash"></div>' : '';
+    const particles = isMystic ? `<div class="burst-particles">${burstParticlesHTML()}</div>` : '';
     showModal(`
       <h3>${box.name} — Revealed</h3>
-      <div class="card-actions" style="justify-content:center; align-items:center; margin:8px 0;">
-        <div class="icon-wrap ${rarity}" title="${model} — ${TRAITS[model] || ''}">${toolIconSVG(model, 26)}</div>
+      ${flash}
+      <div class="reveal-stage">
+        <div class="reveal-glow ${rarity} ${isMystic ? 'mystic-grand' : ''}" title="${model} — ${TRAITS[model] || ''}">
+          ${particles}${toolIconSVG(model, rarity, isMystic ? 52 : 34)}
+        </div>
         <span class="tag ${rarity}">${rarity}</span>
       </div>
       <p class="muted small">Seed: <span class="hash">${seed}</span>nonce ${nonce} — hash this yourself to verify it matches the commit above.</p>
-      <div class="card-actions"><button data-action="close-modal" class="primary">Nice</button></div>`);
+      <div class="card-actions"><button data-action="close-modal" class="primary">Nice</button></div>`,
+      isMystic ? 'shake-hard' : '');
     saveState(state);
     render();
   }, { once: true });

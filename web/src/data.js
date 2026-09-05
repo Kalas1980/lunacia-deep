@@ -111,3 +111,12 @@ export const FUSION_RESTORE_FRACTION = 0.5;
 export function fusionFee(rarity) {
   return 20 * TIER[rarity].tierRate;
 }
+
+// §4.5 AXS/bAXS Fusion toll — Epic/Mystic only. Flat per fusion, not scaled by durability:
+// Fusion already prices the fuel tool via fusionFee(SLP) above, this is a small scarce-token
+// seal on top, not a second proportional cost. Common/Rare are excluded — they already lose
+// the NFT outright at retirement (§2.1), so taxing their Fusion in a scarce, unmintable
+// token (§0.2) would price out the exact players the free-starter-crew onboarding (§8) keeps.
+export function fusionFeeAXS(rarity) {
+  return { common: 0, rare: 0, epic: 0.05, mystic: 0.15 }[rarity];
+}

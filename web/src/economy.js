@@ -1,7 +1,7 @@
 // Pure functions implementing docs/DESIGN.md §2.4, §2.5, §4, §6, §7.
 // No DOM, no I/O — importable directly by test/economy.test.js.
 
-import { TIER, WORN_THRESHOLD, MODELS, FUSION_RESTORE_FRACTION, fusionFee } from './data.js';
+import { TIER, WORN_THRESHOLD, MODELS, FUSION_RESTORE_FRACTION, fusionFee, fusionFeeAXS } from './data.js?v=12';
 
 export function clamp(x, lo, hi) {
   return Math.max(lo, Math.min(hi, x));
@@ -59,8 +59,9 @@ export function fusionRepair(tool, fuel) {
   if (!isBroken(tool)) throw new Error('Fusion Repair is only for Broken (0 durability) tools');
   if (fuel.rarity !== tool.rarity) throw new Error('Fusion fuel must be the same rarity');
   const fee = fusionFee(tool.rarity);
+  const feeAXS = fusionFeeAXS(tool.rarity);
   const restored = Math.floor(tool.maxDurability * FUSION_RESTORE_FRACTION);
-  return { tool: { ...tool, durability: restored }, feeSLP: fee };
+  return { tool: { ...tool, durability: restored }, feeSLP: fee, feeAXS };
 }
 
 // Only Common→Rare is blueprint-free per §2.4. Rare→Epic needs a Master Blueprint, which
