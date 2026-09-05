@@ -5,7 +5,8 @@
   --border: #2a3550;
   --text: #e7ecf7;
   --muted: #8b96b3;
-  --accent: #6ea8ff;
+  --accent: #e0a83f;
+  --accent-2: #f4c869;
   --good: #4ade80;
   --warn: #facc15;
   --bad: #f87171;
@@ -112,6 +113,33 @@ button.danger { background: var(--bad); color: #2a0000; border-color: var(--bad)
 .codex-slot.rare.owned { background: #60a5fa; }
 .codex-slot.epic.owned { background: #c084fc; }
 .codex-slot.mystic.owned { background: #fb923c; }
+.codex-slot svg { width: 60%; height: 60%; }
+
+/* ---- item icons: tools & boxes shown as pictures, name/trait on hover ---- */
+.icon-wrap {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  flex-shrink: 0;
+}
+.icon-wrap.common { color: #cbd5e1; border-color: #cbd5e1; }
+.icon-wrap.rare { color: #60a5fa; border-color: #60a5fa; }
+.icon-wrap.epic { color: #c084fc; border-color: #c084fc; }
+.icon-wrap.mystic { color: #fb923c; border-color: #fb923c; }
+.icon-wrap.box { color: var(--accent-2); border-color: var(--accent); width: 52px; height: 52px; }
+[title] { cursor: help; }
+
+.box-name { font-weight: 700; font-size: 1rem; }
+.box-flavor { font-style: italic; color: var(--muted); font-size: 0.8rem; margin: 4px 0 8px; }
+.rarity-pips { display: flex; gap: 4px; margin: 6px 0; }
+.rarity-pips .pip { flex: 1; height: 6px; border-radius: 999px; background: var(--border); overflow: hidden; }
+.rarity-pips .pip-fill { height: 100%; }
+.rarity-pips .pip-fill.common { background: #cbd5e1; }
+.rarity-pips .pip-fill.rare { background: #60a5fa; }
+.rarity-pips .pip-fill.epic { background: #c084fc; }
+.rarity-pips .pip-fill.mystic { background: #fb923c; }
 
 .tool-list, .node-list, .box-list { display: flex; flex-direction: column; gap: 10px; }
 

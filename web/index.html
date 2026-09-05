@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Lunacia Deep — Prototype</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=4" />
 </head>
 <body>
   <header class="topbar">
@@ -13,9 +13,9 @@
       <span class="subtitle">Vibeathon prototype — durability &amp; Fusion Repair loop</span>
     </div>
     <div class="wallet">
-      <span class="pill">USDC <b id="usdc-balance">0</b></span>
-      <span class="pill">Ore <b id="ore-balance">0</b></span>
-      <span class="pill">SLP <b id="slp-balance">0</b></span>
+      <span class="pill" title="USDC — buys blind boxes"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-3px; margin-right:4px;"><circle cx="12" cy="12" r="9"/><path d="M12 6v12M9 9.5a2.5 2.5 0 012.5-1h1a2.5 2.5 0 010 5h-1a2.5 2.5 0 000 5h1a2.5 2.5 0 002.5-1" stroke-width="1.25"/></svg><b id="usdc-balance">0</b></span>
+      <span class="pill" title="Ore — mining output"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-3px; margin-right:4px;"><path d="M12 2l7 5-2 9-5 4-5-4-2-9z"/><path d="M12 2v18M5 7l7 3 7-3" stroke-width="0.75"/></svg><b id="ore-balance">0</b></span>
+      <span class="pill" title="SLP — spent on repairs and Fusion Repair"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" style="vertical-align:-3px; margin-right:4px;"><path d="M12 3c3 3.5 6 7 6 10.5A6 6 0 016 13.5C6 10 9 6.5 12 3z"/><path d="M9.5 14.5a2.5 2.5 0 003 1.8" stroke-width="1" stroke-linecap="round"/></svg><b id="slp-balance">0</b></span>
       <button id="reset-btn" class="ghost-btn" title="Wipe local save and start over">Reset</button>
     </div>
   </header>
@@ -33,7 +33,7 @@
     </section>
 
     <section class="panel">
-      <h2>Your Tools</h2>
+      <h2>Inventory</h2>
       <div id="tool-list" class="tool-list"></div>
     </section>
 

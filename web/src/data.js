@@ -35,13 +35,63 @@ export const MODELS = {
   ],
 };
 
+// §2.5 signature traits — one line per model, shown as a hover tooltip in the UI so tools
+// can be displayed as icons (their "inventory type") rather than a wall of text.
+export const TRAITS = {
+  'Hand Shovel': 'Yield +6%',
+  'Field Spade': 'Endurance −6% durability drain',
+  'Rock Hammer': 'Affinity: +8% Dust',
+  'Stone Chisel': 'Fortune +4%',
+  "Prospector's Pan": 'Fortune +6% on Dust only',
+  'Pry Bar': 'Tempo −5% (faster shifts)',
+  'Hand Auger': 'Affinity: +8% Iron',
+  'Sifting Sieve': 'Fortune +4%, Tempo +5% (slower)',
+  "Miner's Mallet": 'Resilience +4pp repair success',
+  'Hauling Bucket': 'Yield +4% and Endurance −4%',
+  'Steel Pickaxe': 'Yield +12%',
+  'Reinforced Shovel': 'Endurance −12% durability drain',
+  'Twin-Blade Mattock': 'Yield +12%, Tempo −5%',
+  'Crank Auger': 'Tempo −10% (faster shifts)',
+  'Spring Sledge': 'Yield +18% on T1–T2 nodes only',
+  'Ore Sluice': 'Fortune +8%',
+  'Cutting Torch': 'Affinity: +15% Iron & Silver',
+  'Ratchet Drill': 'Endurance −8%, Resilience +6pp',
+  'Gear Winch': '+10% yield when all 3 Axies share a class',
+  'Tempered Wedge Kit': 'Resilience +10pp repair success',
+  'Jackhammer Rig': 'Fortune +10%, Yield +8%',
+  'Pneumatic Drill Array': 'Yield +20%, but 2x durability drain',
+  'Rotary Core Borer': 'Tempo −20% — the idle-optimiser’s pick',
+  'Arc Cutter': 'Affinity: +25% Silver & Moonstone',
+  'Seismic Charge Pack': '4% chance to double a shift’s yield',
+  'Lunacian Excavator': 'Seismic Charge — 5% chance to double a shift',
+  'Moonwell Bore': 'Moonlit — +40% Moonstone find rate',
+  'Aether Resonator': 'Attunement — failed repairs never reduce maxDurability',
+  'Chimera Ripper': 'Ravenous — +25% yield, 2x durability drain',
+  'Starfall Auger': 'Starfall — 1.5% chance per shift to drop a Prime Core',
+};
+
 // §7 blind box odds and prices — priced in USDC exactly as designed. Boxes mint tools from
 // external revenue; they are never bought with ore, which is mining OUTPUT, not input
 // (§0: "no money printer" — ore must only flow toward AXS/RON/SLP via refineries, §5).
 export const BOXES = {
-  basic: { name: 'Basic Crate', priceUSDC: 5, odds: { common: 0.82, rare: 0.165, epic: 0.014, mystic: 0.001 } },
-  prospector: { name: "Prospector's Case", priceUSDC: 20, odds: { common: 0.42, rare: 0.46, epic: 0.11, mystic: 0.01 } },
-  deepvault: { name: 'Deep Vault', priceUSDC: 75, odds: { common: 0, rare: 0.55, epic: 0.38, mystic: 0.07 } },
+  basic: {
+    name: 'Basic Crate',
+    flavor: 'Splintered wood, a rusted latch. Most miners start here.',
+    priceUSDC: 5,
+    odds: { common: 0.82, rare: 0.165, epic: 0.014, mystic: 0.001 },
+  },
+  prospector: {
+    name: "Prospector's Case",
+    flavor: 'Iron-banded and well-travelled. Something worth carrying.',
+    priceUSDC: 20,
+    odds: { common: 0.42, rare: 0.46, epic: 0.11, mystic: 0.01 },
+  },
+  deepvault: {
+    name: 'Deep Vault',
+    flavor: 'Sealed with Lunacian glyphs. It hums faintly when shaken.',
+    priceUSDC: 75,
+    odds: { common: 0, rare: 0.55, epic: 0.38, mystic: 0.07 },
+  },
 };
 
 // §6 nodes — T1/T2 only in this prototype (T3+ need Depth Permits, out of scope for Round 1).

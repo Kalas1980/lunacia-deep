@@ -1,10 +1,11 @@
-import { RARITIES, MODELS, BOXES, NODES, DEMO_SHIFT_MS, fusionFee } from './data.js';
+import { RARITIES, MODELS, TRAITS, BOXES, NODES, DEMO_SHIFT_MS, fusionFee } from './data.js';
 import {
   repairCostSLP, repairSuccessChance, rollRepair, isBroken, isWorn,
   fusionRepair, reforgeOdds, reforge, shiftYield, drainDurability, pickModel,
 } from './economy.js';
 import { loadState, saveState, resetState, logEvent, getTool, ownedModels } from './state.js';
 import { randomSeed, sha256Hex, makeRoller, weightedPick } from './rng.js';
+import { toolIconSVG, boxIconSVG } from './icons.js';
 
 const RARITY_RANK = { common: 0, rare: 1, epic: 2, mystic: 3 };
 let state = loadState();
@@ -51,8 +52,9 @@ function renderCodex() {
     for (const model of MODELS[rarity]) {
       const has = owned.has(model);
       if (has) ownedCount += 1;
+      const tooltip = `${model} — ${rarity} — ${TRAITS[model] || ''}`;
       html.push(
-        `<div class="codex-slot ${rarity} ${has ? 'owned' : ''}" title="${model} (${rarity})">${has ? model : '?'}</div>`
+        `<div class="codex-slot ${rarity} ${has ? 'owned' : ''}" ${has ? `title="${tooltip}"` : ''}>${has ? toolIconSVG(model, 20) : '?'}</div>`
       );
     }
   }
@@ -113,10 +115,11 @@ function renderToolCard(tool) {
       ${tool.rarity === 'common' || tool.rarity === 'rare' ? `<button data-action="reforge-start" data-tool="${tool.id}">Reforge (§2.4)</button>` : ''}`;
   }
 
+  const tooltip = `${tool.model} — ${TRAITS[tool.model] || ''}`;
   return `
     <div class="card">
       <div class="card-head">
-        <span class="card-title">${tool.model}</span>
+        <div class="icon-wrap ${tool.rarity}" title="${tooltip}">${toolIconSVG(tool.model, 26)}</div>
         <span class="tag ${tool.rarity}">${tool.rarity}</span>
         ${statusTag}
       </div>
@@ -141,12 +144,24 @@ function renderNodes() {
 
 function renderBoxes() {
   const list = document.getElementById('box-list');
-  list.innerHTML = Object.entries(BOXES).map(([key, b]) => `
+  list.innerHTML = Object.entries(BOXES).map(([key, b]) => {
+    const oddsStr = Object.entries(b.odds).filter(([, p]) => p > 0).map(([r, p]) => `${r} ${(p * 100).toFixed(1)}%`).join(' · ');
+    const pips = RARITIES.filter((r) => b.odds[r] > 0)
+      .map((r) => `<div class="pip" title="${r} ${(b.odds[r] * 100).toFixed(1)}%"><div class="pip-fill ${r}" style="width:${Math.max(8, b.odds[r] * 100)}%"></div></div>`)
+      .join('');
+    return `
     <div class="card">
-      <div class="card-head"><span class="card-title">${b.name}</span><span class="muted small">$${b.priceUSDC} USDC</span></div>
-      <p class="node-req">${Object.entries(b.odds).filter(([, p]) => p > 0).map(([r, p]) => `${r} ${(p * 100).toFixed(1)}%`).join(' · ')}</p>
-      <div class="card-actions"><button data-action="buy-box" data-box="${key}" class="primary" ${state.usdc < b.priceUSDC ? 'disabled' : ''}>Open</button></div>
-    </div>`).join('');
+      <div class="card-head">
+        <div class="icon-wrap box" title="Exact odds — ${oddsStr}">${boxIconSVG(key, 30)}</div>
+        <div>
+          <div class="box-name">${b.name}</div>
+        </div>
+      </div>
+      <p class="box-flavor">${b.flavor}</p>
+      <div class="rarity-pips" title="Relative rarity odds — hover a segment for the exact chance">${pips}</div>
+      <div class="card-actions"><button data-action="buy-box" data-box="${key}" class="primary" ${state.usdc < b.priceUSDC ? 'disabled' : ''}>Open — $${b.priceUSDC}</button></div>
+    </div>`;
+  }).join('');
 }
 
 function renderLog() {
@@ -326,7 +341,10 @@ async function doBuyBox(boxKey) {
     logEvent(state, `Opened ${box.name} → ${rarity.toUpperCase()} ${model}.`);
     showModal(`
       <h3>${box.name} — Revealed</h3>
-      <p>Result: <b class="tag ${rarity}">${rarity}</b> ${model}</p>
+      <div class="card-actions" style="justify-content:center; align-items:center; margin:8px 0;">
+        <div class="icon-wrap ${rarity}" title="${model} — ${TRAITS[model] || ''}">${toolIconSVG(model, 26)}</div>
+        <span class="tag ${rarity}">${rarity}</span>
+      </div>
       <p class="muted small">Seed: <span class="hash">${seed}</span>nonce ${nonce} — hash this yourself to verify it matches the commit above.</p>
       <div class="card-actions"><button data-action="close-modal" class="primary">Nice</button></div>`);
     saveState(state);
