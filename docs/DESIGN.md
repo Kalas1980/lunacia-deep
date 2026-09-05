@@ -232,45 +232,58 @@ and anyone can keep trying the whole time.** When the counter hits 100 it closes
 
 | | |
 |---|---|
-| **Cost of one roll** | **Burns the Epic set + the Mystic set** (5 + 5 tools). Commons and Rares are verified as held, **not** burned. |
+| **Cost of one roll** | **Burns the Common set + the Rare set + the Epic set** (10 + 10 + 5 = 25 tools). Mystics are verified as held, **never** burned. |
 | **Base odds** | **40%** |
 | **Pity** | Guaranteed on your **3rd** roll. Expected ≈ **2 Codex rolls per Genesis**. |
-| **On failure** | **A tool back** — 1st failure returns a fresh **Epic**, 2nd failure returns a fresh **Mystic** — plus 2× Prime Core and a **Founder's Mark** (cosmetic, permanent, shown on your profile; people wear their failed attempts) |
+| **On failure** | **A tool back** — 1st failure returns a fresh **Epic**, 2nd failure returns a fresh **Rare** — plus 2× Prime Core and a **Founder's Mark** (cosmetic, permanent, shown on your profile; people wear their failed attempts) |
 | **On success** | 7 days to pay **1,000 USDC**. Miss it and the slot returns to the pool. |
 | **Per-wallet cap** | **3 Genesis maximum.** One whale must not own 40% of the flagship supply. |
 | **Randomness** | Same published commit–reveal as blind boxes (§7). This is the highest-stakes roll in the game; it must be independently verifiable. |
 
 **The failure return is deterministic, not another roll.** Failure #1 hands back a fresh
-Epic; failure #2 hands back a fresh Mystic; failure #3 cannot happen (pity). Both are
+Epic; failure #2 hands back a fresh Rare; failure #3 cannot happen (pity). Both are
 new mints, dupe-protected toward models you are missing, so the consolation actively
-rebuilds you toward the next attempt.
+rebuilds you toward the next attempt. Common is never returned — it's the cheapest of the
+three burned tiers to replace, so the mercy is spent where it actually matters.
 
 Stacking RNG on top of a loss is the single most rage-inducing pattern in gacha — losing a
 $5,000 roll and *then* losing a coin flip for the consolation is how you turn a disappointed
 player into a hostile one. A guaranteed, legible ladder ("the second failure always returns
 a Mystic") costs the sink almost nothing and is worth far more than the tools it gives away.
 
-**What this costs the sink: about 6%.** Expected net burn per Genesis minted falls from
-10 Epics + 10 Mystics to roughly **9.2 Epics + 9.4 Mystics** — the Mystic bottleneck, which
-is what actually gates the race, barely moves. Cheap price for the difference between a
-chase and a mugging. It is also not farmable: burning ten tools to recover one is
-catastrophic EV as a strategy, so nobody will fail on purpose.
+**What this costs the sink: modest.** Expected attempts per Genesis is ~1.96 (40% odds,
+pity on the 3rd), so gross burn runs ~19.6 Common + 19.6 Rare + 9.8 Epic per Genesis
+minted; the failure-return mercy pulls that down to roughly **19.6 Common + 19.2 Rare + 9.2
+Epic net** — Rare barely moves, Epic drops by about 6%, same shape as before. It is also
+not farmable: burning 25 tools to recover one or two is catastrophic EV as a strategy, so
+nobody will fail on purpose.
 
-**Why it burns exactly the Epic and Mystic sets.** Epic and Mystic tools are immortal
-(§4.2) — they can never retire, so absent this they have *no terminal sink at all* and
-their floor price decays forever as supply accumulates. The Genesis roll is that sink. Now
-every tier has one: Common and Rare die by retirement and reforge (§2.1, §2.4), Epic and
-Mystic die by ascension. That symmetry is the best structural property in this document.
+**Why Mystic is spared and Common/Rare/Epic pay the toll instead.** Mystic is the hardest
+tier to acquire in the first place — the lowest box odds across all three tiers (0.1% /
+1% / 7%, §7) — so it is also the slowest part of the Codex gate to rebuild. Burning it on
+every attempt would make repeat rolls punishingly slow regardless of how much a player is
+willing to spend, since box odds — not money — become the bottleneck. Sparing Mystic keeps
+repeat attempts gated by *spend*, which is a design lever, rather than by *luck on the
+rarest tier*, which isn't. Common, Rare, and Epic are all fast to rebuild via boxes, so
+burning them 25-at-a-time keeps the sink real without making the race feel unfair.
+
+**The trade-off, stated plainly:** Mystic no longer gets a burn from this mechanic at all.
+Its only sink is now Fusion Repair (§4.5) — triggered by ordinary neglect, not a
+deliberate gamble — which is real but lower-frequency than the Genesis/Ascension churn
+Epic still gets. Watch the Mystic floor price specifically; if it decays, the fix is a
+Mystic-specific sink (a Mystic-only reforge tier, or folding a small Mystic cost back into
+the roll), not reversing this call.
 
 **Price of the ticket: 1,000 USDC**, deliberately modest. The real price is the Codex — and
-at ~2 rolls per Genesis, that is roughly **10 Epics and 10 Mystics consumed per Genesis
-minted**. Pricing the ticket high on top of that would leave slots unsold, and 60 minted
-Genesis tools is a far weaker flagship than 100. You want all 100 claimed, loudly, with
-names attached.
+at ~2 rolls per Genesis, that is roughly **20 Commons, 20 Rares, and 10 Epics consumed per
+Genesis minted** (Mystics untouched). Pricing the ticket high on top of that would leave
+slots unsold, and 60 minted Genesis tools is a far weaker flagship than 100. You want all
+100 claimed, loudly, with names attached.
 
 > `ponytail:` base odds and the burn set are the two knobs that decide whether this is a
 > $500k or a $2M revenue engine, and whether it feels like a chase or a mugging. Both are
-> timelocked config. Tune on the live Mystic floor price, not on this document.
+> timelocked config. Tune on the live Common/Rare/Epic floor prices — the tiers actually
+> being spent now — not on this document.
 
 **The Progenitor's stats:**
 
@@ -292,33 +305,35 @@ never a cash flow. This is not a stylistic preference; it is the line between an
 an unregistered offering.
 
 **Why this mechanic is worth building:** the Genesis race creates standing, *renewing*
-demand for every rarity including Commons — renewing because each roll destroys ten
-top-tier tools and the loser has to rebuild. Common tools are otherwise economically worthless the
-moment a player can afford Rares — the codex makes them permanently collectible, props up
-the floor of the entire tool market, and routes enormous volume through your 4% royalty.
-It is simultaneously the endgame goal, the marketplace engine, and the answer to the
+demand for exactly the tiers that need it most — Common tools are otherwise economically
+worthless the moment a player can afford Rares, and now every serious attempt burns 25 of
+them (Common/Rare/Epic combined) and the loser has to rebuild. The codex makes Commons
+permanently collectible, props up the floor of the entire tool market, and routes enormous
+volume through your 4% royalty. It is simultaneously the endgame goal, the marketplace
+engine, and a real (if partial — see the Mystic trade-off above) answer to the
 top-tier-floor-decay risk in §12.
 
 ### 2.7 Ascension Seasons — the sink that outlives Genesis
 
-**This closes the largest open item flagged in §14.4.** Genesis is capped at 100 and its
-roll (§2.6) is the only burn Epic and Mystic tools have. When slot 100 mints, that burn
-stops — permanently, unless something replaces it. It has to exist *before* that day, not
-be improvised on it.
+**This closes the largest open item flagged in §14.4.** Genesis is capped at 100, and its
+roll (§2.6) is Epic's main terminal sink — Epic is immortal (§4.2) and otherwise only
+sheds supply through Fusion Repair (§4.5). When slot 100 mints, that sink stops —
+permanently, unless something replaces it. It has to exist *before* that day, not be
+improvised on it.
 
 **The fix reuses machinery that already exists**, rather than adding a new system: the same
-5+5 burn, the same commit–reveal roll, the same Seasons cadence from §8 — just uncapped and
-recurring instead of a single 100-slot race.
+10+10+5 burn, the same commit–reveal roll, the same Seasons cadence from §8 — just
+uncapped and recurring instead of a single 100-slot race.
 
 **How it works, starting the season *after* Genesis slot 100 mints:**
 
 | | |
 |---|---|
 | **Cadence** | Once per 8-week Season (§8), reusing the existing season clock |
-| **Cost per attempt** | Burn one Epic set + one Mystic set (5 + 5) — identical to the Genesis roll |
+| **Cost per attempt** | Burn one Common set + one Rare set + one Epic set (10 + 10 + 5 = 25) — identical to the Genesis roll; Mystics are spared here too |
 | **Odds** | **60% base, guaranteed on 2nd attempt** — deliberately easier than Genesis ever was, because there is no scarcity left to protect |
 | **On success** | Mint an **Ascendant** tool: same stat line as Genesis (×5.00 yield, 150 max dur., cannot fail repairs, 4-Axie crew) but **stamped with the season number**, not numbered #1–100, and visually distinct from the Progenitor line |
-| **On failure** | Same deterministic return as §2.6 (fresh Epic, then fresh Mystic on 2nd try) |
+| **On failure** | Same deterministic return as §2.6 (fresh Epic, then fresh Rare on 2nd try) |
 | **Per-season cap** | **None on attempts. A soft cap of 150 mints/season**, throttled by lowering that season's odds toward 40% if mints are pacing to exceed it — publish the live count on the dashboard (§16), same pattern as the Genesis counter |
 
 **Why Ascendants are not just more Genesis tools.** They carry full Progenitor-tier power —
@@ -490,10 +505,10 @@ apart:**
 
 **Why Fusion applies to Epic and Mystic too, even though they're immortal.** Immortality
 in §4.2 was always about `maxDurability` never bottoming out below 40 — it was never a
-promise that a neglected tool stays usable. A Broken Epic still can't mine. And this closes
-a gap flagged back in §12: Epic/Mystic previously had no sink outside the Genesis/Ascension
-roll (§2.6, §2.7); Fusion adds a second, much more frequent one, since it triggers on
-ordinary neglect rather than a deliberate high-stakes gamble.
+promise that a neglected tool stays usable. A Broken Epic or Mystic still can't mine. For
+Epic this is a second sink layered on top of the Genesis/Ascension roll (§2.6, §2.7); for
+**Mystic, which the roll deliberately spares (§2.6), Fusion Repair is the *only* sink it
+has** — worth watching closely for exactly that reason.
 
 **Why this is worth the harshness it introduces.** Without a hard floor, "run it to 0" was
 free — the worst case was a 65% coin flip identical to running it to 1. Now 0 is a cliff:
@@ -679,7 +694,8 @@ timeline, or the validation gate.
 | Revenue falls → pools shrink → players leave → revenue falls | **Critical** | Pro-rata pools (§5) make this a slow contraction rather than a collapse; 90-day reserve floor; publicly published emission formula so nobody is surprised. |
 | Loot box regulation (BE/NL/PH/app stores) | High | Odds disclosure, direct-purchase alternative, geoblocking, no earnings claims in marketing. |
 | Tool oversupply → floor to zero → box sales die | High | Retirement + salvage burn (§2.1); reforge is 2-in-1-out so it still contracts supply (§2.4). Monitor the supply curve weekly from launch. |
-| Epic/Mystic supply is immortal → top-tier floor price decays | Low (was Medium) | **Further solved by Fusion Repair (§4.5):** every Broken Epic/Mystic now burns a second one on ordinary neglect, not just on a deliberate Genesis/Ascension gamble — a much higher-frequency sink than §2.6/§2.7 alone. Watch the Epic+ floor weekly. |
+| Epic supply is immortal → top-tier floor price decays | Low | Sunk by both Fusion Repair (§4.5, ordinary neglect) and the Genesis/Ascension burn (§2.6/§2.7, ~9.2 net per Genesis). Watch the Epic floor weekly. |
+| Mystic is spared from the Genesis/Ascension burn by design (§2.6) → its only sink is Fusion Repair | Medium | This is a known, accepted trade-off, not an oversight — see §2.6's "trade-off, stated plainly." Watch the Mystic floor specifically; if it decays, add a Mystic-specific sink rather than reversing the spare. |
 | Fusion Repair (§4.5) feels punishing rather than fair — a mistake destroys a whole tool | Medium | Standing Orders (§4.3) as a one-toggle prevention; the 30%-durability yield penalty as an early warning; loud low-durability UI alerts before the 0 cliff. Tune the 50%-restore and fee numbers on Phase 0.5 playtester reaction (§15), not in isolation. |
 | Repair-failure rage / "RNG is rigged" accusations | Medium | Published daily seeds and verifiable rolls (§4.4); failure is partial, never total; `pSuccess` floored at 50%; show the odds in the UI *before* the player confirms. |
 | Reforge cannibalises blind box sales | High | Epic/Mystic excluded as inputs; Rare→Epic gated behind Master Blueprint; forge EV per Epic kept above box EV (§2.4). Re-verify in the Phase 0.5 sim (§15). |
@@ -858,13 +874,16 @@ mechanic (§2.6) makes it roughly twice the engine a first-come queue would have
 
 A queue is won once and then everyone else stops playing for it. A **repeatable roll that
 stays open until the 100th mint** keeps every serious player buying boxes for the entire
-race, and each failed roll destroys 5 Epics and 5 Mystics that have to be rebought.
+race, and every attempt burns 25 Commons/Rares/Epics that have to be rebought regardless of
+outcome — Mystic is deliberately spared (§2.6), so it's a one-time cost per player rather
+than a per-attempt one.
 
-Rough scale: ~2 rolls per Genesis × 100 Genesis ≈ **920 Epics and 940 Mystics consumed**,
-net of the failure returns (§2.6).
-Sourced fresh, 5 distinct Mystics is on the order of 70 Deep Vaults (~$5,300); most will
-come cheaper via secondary, but every secondary trade still pays your 4% royalty. Call it
-**$1M–$2M in box and marketplace volume** across the race, plus $100k in Genesis tickets.
+Rough scale across the full 100-Genesis race: ~1,960 Commons, ~1,920 Rares, and ~920 Epics
+net consumed (§2.6's math), zero Mystics. Sourced fresh, 20 Rares and 10 Epics per attempt
+is on the order of several Prospector's Cases and Deep Vaults per player; most will come
+cheaper via secondary once the market matures, but every secondary trade still pays your 4%
+royalty. Call it **$1M–$2M in box and marketplace volume** across the race, plus $100k in
+Genesis tickets.
 Set-completion is the most reliable monetisation mechanic in the history of gacha; here it
 is also the only terminal sink the immortal tiers have.
 
@@ -921,7 +940,7 @@ trust and perception collapse, not a design flaw.
 3. **Repair-as-a-roll prices attention** (§4.3). Top up often and safely, or run to empty and gamble — the idle genre's central resource made into an actual decision. I have not seen this done in an idle crypto game and it is the most original thing in the design.
 4. **The immortal top tier is a better sink than destruction.** An Epic that must be fed SLP forever generates more lifetime revenue than one that dies and gets replaced, and it feels better to own.
 5. **The Codex makes every rarity permanently valuable**, which fixes the standard collapse where low-tier NFTs go to zero and drag box EV down with them.
-6. **Every tier has a terminal sink.** Common and Rare die by retirement and reforge; Epic and Mystic die by Genesis ascension (§2.6). Nothing accumulates forever — which is the failure mode that kills NFT game economies.
+6. **Nearly every tier has a terminal sink, and the one gap is a deliberate, documented choice.** Common and Rare die by retirement, reforge, and now the Genesis/Ascension burn too; Epic dies by Genesis/Ascension; Mystic is spared from that burn on purpose (§2.6) and relies on Fusion Repair alone — a real trade-off, not an oversight, and one worth monitoring.
 7. **Nothing requires anyone's permission to ship** (Appendix A), because the miner asset is an adapter.
 
 ## 14.4 What worries me
@@ -982,9 +1001,10 @@ of a promise.
 | **Genesis roll attempts, wins, and running win rate** | roll event log | Proves the published 40% + pity-on-3rd is real, not just claimed |
 | **Genesis holders: count, and max held by one wallet** (cap 3, §2.6) | Genesis contract, token-holder query | Directly answers "is this whale-captured" with a number, not a promise |
 | **Tools reforged, by input tier → output rarity** (§2.4) | `MiningTool` burn/mint events | Shows whether the forge is actually a salvage floor or is quietly beating the box (§2.4's own kill condition) |
-| **Tools Fusion-repaired, by rarity** (§4.5) | fuel-burn events | Tracks the new Epic/Mystic sink and how often players are actually hitting the 0-durability cliff — a rising rate is an early signal to soften the UI warning, not the mechanic |
+| **Tools Fusion-repaired, by rarity** (§4.5) | fuel-burn events | Tracks this sink per tier — the only one Mystic has (§2.6) — and how often players are hitting the 0-durability cliff; a rising rate is an early signal to soften the UI warning, not the mechanic |
 | **Tools retired / salvaged** (Common, Rare) | burn events | Tracks whether the supply sink is keeping pace with box minting |
-| **Epic / Mystic in circulation, net burned via Genesis rolls (§2.6) and Ascension rolls (§2.7)** | mint/burn delta | Confirms the sink stays live across the Genesis→Ascension handoff — this is the number that would have caught the old gap before it became a crisis |
+| **Common / Rare / Epic in circulation, net burned via Genesis rolls (§2.6) and Ascension rolls (§2.7)** | mint/burn delta | Confirms the sink stays live across the Genesis→Ascension handoff |
+| **Mystic in circulation, net burned via Fusion Repair only** (§4.5) | mint/burn delta | The one tier with no Genesis/Ascension sink — this is the early-warning number for the trade-off in §2.6 |
 | **Daily reward pool size and payout ratio, SLP / RON / AXS** (§5) | `RewardDistributor` | The number that makes "35% payout, not income" a checkable fact instead of a claim |
 | **SLP burned to date** (§4.4) | `RepairVault` burn total | The Sky Mavis pitch number (§A.2), kept honest by being public |
 | **90-day reserve floor coverage ratio** (§5) | treasury balance vs. floor | Solvency, in the open, before anyone has to ask |
