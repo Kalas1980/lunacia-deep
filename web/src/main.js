@@ -6,14 +6,14 @@
 import {
   RARITIES, MODELS, TRAITS, TIER, BOXES, NODES, DEMO_SHIFT_MS, fusionFee, fusionFeeAXS,
   SMELTS, REFINERY_MULT, REFINERY_MAX_DURABILITY, refineryRepairCostSLP, refineryRepairCostOre,
-} from './data.js?v=15';
+} from './data.js?v=18';
 import {
   repairCostSLP, repairSuccessChance, rollRepair, isBroken, isWorn,
   fusionRepair, reforgeOdds, reforge, shiftYield, drainDurability, pickModel, bestRefineryMult,
-} from './economy.js?v=15';
-import { loadState, saveState, resetState, logEvent, getTool, ownedModels } from './state.js?v=15';
-import { randomSeed, sha256Hex, makeRoller, weightedPick } from './rng.js?v=15';
-import { toolIconSVG, boxIconSVG, refineryIconSVG } from './icons.js?v=15';
+} from './economy.js?v=18';
+import { loadState, saveState, resetState, logEvent, getTool, ownedModels } from './state.js?v=18';
+import { randomSeed, sha256Hex, makeRoller, weightedPick } from './rng.js?v=18';
+import { toolIconSVG, boxIconSVG, refineryIconSVG } from './icons.js?v=18';
 
 const RARITY_RANK = { common: 0, rare: 1, epic: 2, mystic: 3 };
 let state = loadState();
@@ -26,6 +26,7 @@ let marketFilter = 'common'; // view-only, not persisted — which rarity tab is
 // the one-shot animation for it" without needing to touch how render() itself works.
 let lastToolAction = null; // { toolId, type: 'repair-success' | 'repair-fail' | 'pop', at }
 const lastBalanceText = {}; // id -> last-rendered string, so pills only pulse on real change
+let openNodeKey = null; // which node's site screen is open, if any — kept live by render()
 
 function roll() {
   return crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296;
@@ -97,6 +98,7 @@ function render() {
   renderRefinery();
   renderMarketplace();
   renderLog();
+  if (openNodeKey) showModal(buildNodeSiteHTML(openNodeKey), 'site-view');
 }
 
 function renderCodex() {
@@ -181,7 +183,7 @@ function renderToolCard(tool) {
   return `
     <div class="item-tile ${tool.rarity} ${feedbackClass}">
       ${statusBadge}
-      <div class="icon-wrap ${tool.rarity}" title="${tooltip}">${toolIconSVG(tool.model, tool.rarity, 28)}</div>
+      <div class="icon-wrap ${tool.rarity} ${broken ? 'broken-icon' : ''}" title="${tooltip}">${toolIconSVG(tool.model, tool.rarity, 28)}</div>
       <div class="durbar-wrap" style="width:100%">
         <div class="durbar-track"><div class="durbar-fill ${durClass}" style="width:${durPct}%"></div></div>
         <div class="durbar-label"><span>${tool.durability}/${tool.maxDurability}</span></div>
@@ -192,17 +194,94 @@ function renderToolCard(tool) {
 
 function renderNodes() {
   const list = document.getElementById('node-list');
-  list.innerHTML = Object.entries(NODES).map(([key, n]) => `
-    <div class="card node-card">
+  list.innerHTML = Object.entries(NODES).map(([key, n]) => {
+    const workingCount = state.activeShifts.filter((sh) => sh.nodeKey === key).length;
+    const stoppedCount = state.tools.filter((t) => isBroken(t) && t.lastNodeKey === key).length;
+    return `
+    <div class="card node-card" data-action="view-node" data-node="${key}" role="button" tabindex="0">
       <img class="node-art" src="${n.image}" alt="${n.name}" />
       <div class="node-body">
-        <div class="card-head"><span class="card-title">${n.name}</span></div>
+        <div class="card-head">
+          <span class="card-title">${n.name}</span>
+          ${workingCount > 0 ? `<span class="tag status-mining">${workingCount} working</span>` : ''}
+          ${stoppedCount > 0 ? `<span class="tag status-broken">${stoppedCount} broken</span>` : ''}
+        </div>
         <p class="node-flavor">${n.flavor}</p>
         <p class="node-req">Durability drain ${n.durabilityDrain}/shift · base ore ${n.oreBase} ·
         ${n.minRarity ? `requires ${n.minRarity}+ tool` : 'any tool'} ·
         demo shift length ${DEMO_SHIFT_MS[key] / 1000}s</p>
+        <p class="node-click-hint muted small">Click to view this site →</p>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+}
+
+// Pure string builder (no DOM writes) so it can be called both to open the site screen and
+// to keep it live on every render() tick — the outer 1s interval doesn't reach into
+// #modal-root on its own, so without this a countdown shown here would freeze at open-time.
+// Shared by both sections below so the "greyscale icon + red name" broken treatment can't
+// drift out of sync between "stopped here" and the ordinary idle-list row.
+function siteRowHTML(tool, rightSideHTML) {
+  const broken = isBroken(tool);
+  return `
+      <div class="site-row ${broken ? 'broken' : ''}">
+        <div class="icon-wrap ${tool.rarity} ${broken ? 'broken-icon' : ''}" title="${tool.model}">${toolIconSVG(tool.model, tool.rarity, 26)}</div>
+        <span class="site-row-name">${tool.model}</span>
+        ${rightSideHTML}
+      </div>`;
+}
+
+function buildNodeSiteHTML(nodeKey) {
+  const node = NODES[nodeKey];
+  const workingHere = state.activeShifts.filter((sh) => sh.nodeKey === nodeKey);
+  // A tool that broke while working here has no active shift anymore (doCollect always
+  // clears it), but it should still read as "stopped here", not just vanish — that's the
+  // whole point of tracking lastNodeKey in doSend.
+  const stoppedHere = state.tools.filter((t) => isBroken(t) && t.lastNodeKey === nodeKey);
+
+  const workingRows = workingHere.map((sh) => {
+    const tool = getTool(state, sh.toolId);
+    if (!tool) return '';
+    const remaining = sh.startedAt + sh.durationMs - Date.now();
+    const ready = remaining <= 0;
+    return siteRowHTML(tool, ready
+      ? `<button data-action="collect" data-tool="${tool.id}" class="primary pill-btn">Collect</button>`
+      : `<span class="muted small">⏱ ${fmtTime(remaining)}</span>`);
+  }).join('');
+
+  const stoppedRows = stoppedHere.map((tool) => siteRowHTML(tool,
+    `<button data-action="fuse" data-tool="${tool.id}" class="danger pill-btn" title="Fusion Repair, §4.5">Fuse</button>`));
+
+  const isEligible = (t) => !node.minRarity || RARITY_RANK[t.rarity] >= RARITY_RANK[node.minRarity];
+  // Broken tools are shown above (stoppedRows) if they stopped at THIS node, or just live in
+  // ordinary Inventory otherwise — either way they don't belong in "you can commit" too.
+  const idleEligible = state.tools.filter((t) => isEligible(t) && !isBroken(t) && !activeShiftFor(t.id));
+  const idleRows = idleEligible.map((tool) => siteRowHTML(tool,
+    `<button data-action="send" data-tool="${tool.id}" data-node="${nodeKey}" class="pill-btn">Commit to mine here</button>`));
+
+  const workingCount = workingHere.length + stoppedHere.length;
+
+  return `
+    <img class="node-art site-art" src="${node.image}" alt="${node.name}" />
+    <h3>${node.name}</h3>
+    <p class="node-flavor">${node.flavor}</p>
+    <p class="node-req">Durability drain ${node.durabilityDrain}/shift · base ore ${node.oreBase} ·
+    ${node.minRarity ? `requires ${node.minRarity}+ tool` : 'any tool'}</p>
+
+    <h4 class="site-section-head">Working here${workingCount ? ` (${workingCount})` : ''}</h4>
+    ${workingCount ? workingRows + stoppedRows : '<p class="muted small">Nobody working this node yet.</p>'}
+
+    <h4 class="site-section-head">Idle tools you can commit</h4>
+    ${idleEligible.length === 0
+      ? '<p class="muted small">No eligible idle tools — repair, Fuse a Broken one, or open a blind box.</p>'
+      : idleRows}
+
+    <div class="card-actions"><button data-action="close-modal" class="primary">Close</button></div>`;
+}
+
+function openNodeSite(nodeKey) {
+  openNodeKey = nodeKey;
+  showModal(buildNodeSiteHTML(nodeKey), 'site-view');
 }
 
 function renderBoxes() {
@@ -390,6 +469,7 @@ function showModal(html, extraModalClass = '') {
 }
 function closeModal() {
   document.getElementById('modal-root').innerHTML = '';
+  openNodeKey = null;
 }
 
 // ---------- actions ----------
@@ -399,9 +479,23 @@ function doSend(toolId, nodeKey) {
   const node = NODES[nodeKey];
   if (!tool || isBroken(tool) || activeShiftFor(toolId)) return;
   state.activeShifts.push({ toolId, nodeKey, startedAt: Date.now(), durationMs: DEMO_SHIFT_MS[nodeKey] });
+  tool.lastNodeKey = nodeKey; // survives past collection so a Broken tool still shows
+                              // "stopped here" in the node's site screen (openNodeSite)
   logEvent(state, `${tool.model} sent to ${node.name}.`);
   saveState(state);
   render();
+}
+
+// Highest-rarity idle tool that meets the node's requirement — a rational player would
+// send their best available tool, so auto-replace does the same rather than picking
+// arbitrarily.
+function bestIdleEligibleTool(nodeKey, excludeToolId) {
+  const node = NODES[nodeKey];
+  const candidates = state.tools.filter((t) => t.id !== excludeToolId
+    && !isBroken(t) && !activeShiftFor(t.id)
+    && (!node.minRarity || RARITY_RANK[t.rarity] >= RARITY_RANK[node.minRarity]));
+  if (candidates.length === 0) return null;
+  return candidates.reduce((best, t) => (RARITY_RANK[t.rarity] > RARITY_RANK[best.rarity] ? t : best));
 }
 
 function doCollect(toolId) {
@@ -409,7 +503,8 @@ function doCollect(toolId) {
   const shift = activeShiftFor(toolId);
   if (!tool || !shift) return;
   if (Date.now() < shift.startedAt + shift.durationMs) return;
-  const node = NODES[shift.nodeKey];
+  const nodeKey = shift.nodeKey;
+  const node = NODES[nodeKey];
   const refineryMult = bestRefineryMult(state.refineries);
   const ore = shiftYield(tool, node, refineryMult);
   state.ore += ore;
@@ -418,6 +513,19 @@ function doCollect(toolId) {
   state.activeShifts = state.activeShifts.filter((sh) => sh.toolId !== toolId);
   const boostNote = refineryMult > 1 ? ` (Refinery ×${refineryMult.toFixed(2)})` : '';
   logEvent(state, `${tool.model} finished at ${node.name}: +${ore} ore${boostNote}. Durability now ${tool.durability}/${tool.maxDurability}${isBroken(tool) ? ' — BROKEN, needs Fusion Repair' : ''}.`);
+
+  // Auto-replace: the tool that just broke can't mine (§4 — that rule doesn't change), but
+  // the node shouldn't just go silent because of it. Send the best idle eligible tool to
+  // pick up where it left off, same as a player would do manually from the site screen.
+  if (isBroken(tool)) {
+    const replacement = bestIdleEligibleTool(nodeKey, tool.id);
+    if (replacement) {
+      state.activeShifts.push({ toolId: replacement.id, nodeKey, startedAt: Date.now(), durationMs: DEMO_SHIFT_MS[nodeKey] });
+      replacement.lastNodeKey = nodeKey;
+      logEvent(state, `${replacement.model} automatically sent to ${node.name} to replace the broken ${tool.model}.`);
+    }
+  }
+
   saveState(state);
   render();
 }
@@ -647,6 +755,7 @@ document.addEventListener('click', (e) => {
   const action = el.dataset.action;
   const toolId = el.dataset.tool ? Number(el.dataset.tool) : null;
   if (action === 'send') doSend(toolId, el.dataset.node);
+  else if (action === 'view-node') openNodeSite(el.dataset.node);
   else if (action === 'collect') doCollect(toolId);
   else if (action === 'repair') doRepair(toolId);
   else if (action === 'salvage') doSalvage(toolId);
@@ -661,6 +770,16 @@ document.addEventListener('click', (e) => {
   else if (action === 'refinery-repair-slp') doRefineryRepair(Number(el.dataset.refinery), 'slp');
   else if (action === 'refinery-repair-ore') doRefineryRepair(Number(el.dataset.refinery), 'ore');
   else if (action === 'close-modal') { if (e.target === el) closeModal(); }
+});
+
+// node-card is the only element given a real role="button" (rest of the UI is native
+// <button>s, which get this for free) — needs its own key handler or it's a keyboard trap.
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const el = e.target.closest('[data-action="view-node"]');
+  if (!el) return;
+  e.preventDefault();
+  openNodeSite(el.dataset.node);
 });
 
 document.getElementById('reset-btn').addEventListener('click', () => {
