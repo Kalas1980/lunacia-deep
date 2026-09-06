@@ -324,6 +324,9 @@ table.cmp th { color: var(--color-muted-foreground); font-weight: 600; font-size
       <p class="body" style="margin-top:10px;">A seed is hashed and shown <em>before</em> you open the
       box, revealed <em>after</em> — independently re-hashable by anyone. Same shape as the on-chain
       commit–reveal flow the full design uses; no chain required to prove the pattern works.</p>
+      <p class="body">Every tool also has a fixed-price <b>Marketplace</b> alternative, priced above box
+      EV on purpose — the certainty option that removes the "no way to get it except gambling"
+      argument most loot-box regulation actually targets.</p>
     </div>
   </div>
 
@@ -340,6 +343,33 @@ table.cmp th { color: var(--color-muted-foreground); font-weight: 600; font-size
         <div class="card" style="text-align:center;"><div style="font-size:1.4rem; font-weight:800; color:var(--color-primary)">Match</div><div class="lbl" style="color:var(--color-muted-foreground); font-size:0.8rem;">fresh, same rarity</div></div>
         <div class="card" style="text-align:center;"><div style="font-size:1.4rem; font-weight:800; color:var(--color-warning)">Flaw</div><div class="lbl" style="color:var(--color-muted-foreground); font-size:0.8rem;">born partly worn</div></div>
       </div>
+    </div>
+  </div>
+
+  <!-- 7b: REFINERY -->
+  <div class="slide">
+    <div class="slide-content wide animate-stagger">
+      <div class="eyebrow">A Second Kind of Asset</div>
+      <h2 class="head">Ore doesn't just buy tools. It builds a Refinery.</h2>
+      <div class="flow" style="margin-top:6px;">
+        <div class="flow-step">Burn ore<br>(Smelting Attempt)</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">Same odds shape<br>as Blind Boxes</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">Refinery NFT<br>(rarity-tiered)</div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">Boosts every<br>shift's yield</div>
+      </div>
+      <div class="grid-4" style="max-width:640px; margin-top:6px;">
+        <div class="metric"><div class="num" style="color:var(--primitive-color-rarity-common)">×1.00</div><div class="lbl">Common</div></div>
+        <div class="metric"><div class="num" style="color:var(--primitive-color-rarity-rare)">×1.15</div><div class="lbl">Rare</div></div>
+        <div class="metric"><div class="num" style="color:var(--primitive-color-rarity-epic)">×1.35</div><div class="lbl">Epic</div></div>
+        <div class="metric"><div class="num" style="color:var(--primitive-color-rarity-mystic)">×1.60</div><div class="lbl">Mystic</div></div>
+      </div>
+      <p class="body">Smelted, not bought — no new economy to design, it reuses the same commit–reveal
+      contract as boxes. Deliberately modest multipliers, since a Refinery bonus stacks on top of Tool
+      yield <em>and</em> Axie class bonuses. Its own durability, repaired in SLP or ore, no roll — it
+      never breaks, it just goes idle until fixed.</p>
     </div>
   </div>
 
@@ -386,10 +416,10 @@ table.cmp th { color: var(--color-muted-foreground); font-weight: 600; font-size
       <div class="eyebrow">Prototype &amp; Documentation</div>
       <h2 class="head">Not a mockup — a working prototype.</h2>
       <div class="grid-4" style="margin-top:10px;">
-        <div class="metric"><div class="num">16/16</div><div class="lbl">unit tests passing</div></div>
-        <div class="metric"><div class="num">2</div><div class="lbl">real bugs found &amp; fixed via manual testing</div></div>
-        <div class="metric"><div class="num">0</div><div class="lbl">dependencies — vanilla JS</div></div>
-        <div class="metric"><div class="num">6</div><div class="lbl">clean, logical commits</div></div>
+        <div class="metric"><div class="num">19/19</div><div class="lbl">unit tests passing</div></div>
+        <div class="metric"><div class="num">3</div><div class="lbl">real bugs found &amp; fixed via manual testing</div></div>
+        <div class="metric"><div class="num">36</div><div class="lbl">AI-generated art assets, zero Axie IP</div></div>
+        <div class="metric"><div class="num">18</div><div class="lbl">clean, logical commits</div></div>
       </div>
       <div class="card" style="margin-top:16px; width:min(420px,90%);">
         <div style="display:flex; justify-content:space-between; align-items:baseline;">
@@ -401,7 +431,9 @@ table.cmp th { color: var(--color-muted-foreground); font-weight: 600; font-size
         </div>
       </div>
       <p class="body">The loop above — shift → collect → drain → repair → Broken → Fusion Repair —
-      runs today, in a browser, verified by hand.</p>
+      runs today, in a browser, verified by hand. Repair success/failure, Fusion, and Reforge all get
+      real one-shot feedback (a pulse, a shake, a pop-in) — this isn't just box-opening with juice and
+      everything else silent. Zero dependencies, vanilla JS throughout.</p>
     </div>
   </div>
 

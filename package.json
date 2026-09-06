@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test test/economy.test.js",
+    "test": "node --test test/*.test.js",
+    "sim": "node sim/economy-sim.js",
     "serve": "python3 -m http.server 8080 --directory web"
   }
 }
