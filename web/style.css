@@ -153,6 +153,17 @@ button.pill-btn { padding: 5px 10px; font-size: 0.78rem; border-radius: 999px; }
 .icon-wrap.mystic { color: var(--c-mystic); border-color: var(--c-mystic); }
 .icon-wrap.broken-icon { border-color: var(--broken); }
 .icon-wrap.broken-icon img { filter: grayscale(1) brightness(0.75); }
+
+/* ---- Mining-in-progress: this used to be plain countdown text — the state a player
+   watches longest in the whole game, with the least motion of any of them. ---- */
+.icon-wrap.mining { animation: miningPulse 1.1s ease-in-out infinite; }
+@keyframes miningPulse {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.08) rotate(-5deg); }
+}
+.shift-bar-wrap { width: 100%; }
+.shift-bar-track { height: 8px; border-radius: 999px; background: #0b1220; border: 1px solid var(--border); overflow: hidden; }
+.shift-bar-fill { height: 100%; background: var(--accent-gradient); transition: width 1s linear; }
 [title] { cursor: help; }
 
 /* ---- Inventory: a grid of item tiles, not a stack of dashboard rows ---- */
@@ -342,6 +353,7 @@ button.pill-btn { padding: 5px 10px; font-size: 0.78rem; border-radius: 999px; }
 .site-row:last-child { border-bottom: none; }
 .site-row .icon-wrap { width: 40px; height: 40px; flex-shrink: 0; }
 .site-row-name { flex: 1; font-weight: 600; font-size: 0.9rem; }
+.site-row .shift-bar-wrap { flex: 0 0 120px; width: auto; }
 .site-row.broken .site-row-name { color: var(--broken); }
 
 /* ---- Reforge outcome bar: same visual language as box/smelt rarity bars, different

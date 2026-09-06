@@ -6,14 +6,14 @@
 import {
   RARITIES, MODELS, TRAITS, TIER, BOXES, NODES, DEMO_SHIFT_MS, fusionFee, fusionFeeAXS,
   SMELTS, REFINERY_MULT, REFINERY_MAX_DURABILITY, refineryRepairCostSLP, refineryRepairCostOre,
-} from './data.js?v=18';
+} from './data.js?v=19';
 import {
   repairCostSLP, repairSuccessChance, rollRepair, isBroken, isWorn,
   fusionRepair, reforgeOdds, reforge, shiftYield, drainDurability, pickModel, bestRefineryMult,
-} from './economy.js?v=18';
-import { loadState, saveState, resetState, logEvent, getTool, ownedModels } from './state.js?v=18';
-import { randomSeed, sha256Hex, makeRoller, weightedPick } from './rng.js?v=18';
-import { toolIconSVG, boxIconSVG, refineryIconSVG } from './icons.js?v=18';
+} from './economy.js?v=19';
+import { loadState, saveState, resetState, logEvent, getTool, ownedModels } from './state.js?v=19';
+import { randomSeed, sha256Hex, makeRoller, weightedPick } from './rng.js?v=19';
+import { toolIconSVG, boxIconSVG, refineryIconSVG } from './icons.js?v=19';
 
 const RARITY_RANK = { common: 0, rare: 1, epic: 2, mystic: 3 };
 let state = loadState();
@@ -55,6 +55,20 @@ function burstParticlesHTML(count = 10, radius = 90) {
 function fmtTime(ms) {
   const s = Math.max(0, Math.ceil(ms / 1000));
   return `${s}s`;
+}
+
+// The mining shift is the one state a player watches longest — it was plain countdown text
+// while every other action (repair, fuse, box-opening) got real motion. Shared by the
+// Inventory tool card and the node site screen so both stay visually identical.
+function miningProgressBarHTML(shift) {
+  const elapsed = Date.now() - shift.startedAt;
+  const pct = Math.max(0, Math.min(100, (elapsed / shift.durationMs) * 100));
+  const remaining = shift.startedAt + shift.durationMs - Date.now();
+  return `
+    <div class="shift-bar-wrap">
+      <div class="shift-bar-track"><div class="shift-bar-fill" style="width:${pct}%"></div></div>
+      <span class="muted small">⏱ ${fmtTime(remaining)}</span>
+    </div>`;
 }
 
 function durabilityClass(tool) {
@@ -146,13 +160,11 @@ function renderToolCard(tool) {
   const durPct = Math.max(0, Math.min(100, tool.durability));
 
   let actions = '';
+  const shiftReady = shift && Date.now() >= shift.startedAt + shift.durationMs;
   if (shift) {
-    const remaining = shift.startedAt + shift.durationMs - Date.now();
-    if (remaining <= 0) {
-      actions = `<button data-action="collect" data-tool="${tool.id}" class="primary pill-btn">Collect</button>`;
-    } else {
-      actions = `<span class="muted small">⏱ ${fmtTime(remaining)}</span>`;
-    }
+    actions = shiftReady
+      ? `<button data-action="collect" data-tool="${tool.id}" class="primary pill-btn">Collect</button>`
+      : miningProgressBarHTML(shift);
   } else if (broken) {
     actions = `<button data-action="fuse" data-tool="${tool.id}" class="danger pill-btn" title="Fusion Repair, §4.5">Fuse</button>`;
   } else if (worn) {
@@ -183,7 +195,7 @@ function renderToolCard(tool) {
   return `
     <div class="item-tile ${tool.rarity} ${feedbackClass}">
       ${statusBadge}
-      <div class="icon-wrap ${tool.rarity} ${broken ? 'broken-icon' : ''}" title="${tooltip}">${toolIconSVG(tool.model, tool.rarity, 28)}</div>
+      <div class="icon-wrap ${tool.rarity} ${broken ? 'broken-icon' : ''} ${shift && !shiftReady ? 'mining' : ''}" title="${tooltip}">${toolIconSVG(tool.model, tool.rarity, 28)}</div>
       <div class="durbar-wrap" style="width:100%">
         <div class="durbar-track"><div class="durbar-fill ${durClass}" style="width:${durPct}%"></div></div>
         <div class="durbar-label"><span>${tool.durability}/${tool.maxDurability}</span></div>
@@ -221,11 +233,11 @@ function renderNodes() {
 // #modal-root on its own, so without this a countdown shown here would freeze at open-time.
 // Shared by both sections below so the "greyscale icon + red name" broken treatment can't
 // drift out of sync between "stopped here" and the ordinary idle-list row.
-function siteRowHTML(tool, rightSideHTML) {
+function siteRowHTML(tool, rightSideHTML, extraIconClass = '') {
   const broken = isBroken(tool);
   return `
       <div class="site-row ${broken ? 'broken' : ''}">
-        <div class="icon-wrap ${tool.rarity} ${broken ? 'broken-icon' : ''}" title="${tool.model}">${toolIconSVG(tool.model, tool.rarity, 26)}</div>
+        <div class="icon-wrap ${tool.rarity} ${broken ? 'broken-icon' : ''} ${extraIconClass}" title="${tool.model}">${toolIconSVG(tool.model, tool.rarity, 26)}</div>
         <span class="site-row-name">${tool.model}</span>
         ${rightSideHTML}
       </div>`;
@@ -242,11 +254,11 @@ function buildNodeSiteHTML(nodeKey) {
   const workingRows = workingHere.map((sh) => {
     const tool = getTool(state, sh.toolId);
     if (!tool) return '';
-    const remaining = sh.startedAt + sh.durationMs - Date.now();
-    const ready = remaining <= 0;
+    const ready = Date.now() >= sh.startedAt + sh.durationMs;
     return siteRowHTML(tool, ready
       ? `<button data-action="collect" data-tool="${tool.id}" class="primary pill-btn">Collect</button>`
-      : `<span class="muted small">⏱ ${fmtTime(remaining)}</span>`);
+      : miningProgressBarHTML(sh),
+      ready ? '' : 'mining');
   }).join('');
 
   const stoppedRows = stoppedHere.map((tool) => siteRowHTML(tool,
