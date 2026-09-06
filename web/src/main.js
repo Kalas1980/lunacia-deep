@@ -6,18 +6,26 @@
 import {
   RARITIES, MODELS, TRAITS, TIER, BOXES, NODES, DEMO_SHIFT_MS, fusionFee, fusionFeeAXS,
   SMELTS, REFINERY_MULT, REFINERY_MAX_DURABILITY, refineryRepairCostSLP, refineryRepairCostOre,
-} from './data.js?v=14';
+} from './data.js?v=15';
 import {
   repairCostSLP, repairSuccessChance, rollRepair, isBroken, isWorn,
   fusionRepair, reforgeOdds, reforge, shiftYield, drainDurability, pickModel, bestRefineryMult,
-} from './economy.js?v=14';
-import { loadState, saveState, resetState, logEvent, getTool, ownedModels } from './state.js?v=14';
-import { randomSeed, sha256Hex, makeRoller, weightedPick } from './rng.js?v=14';
-import { toolIconSVG, boxIconSVG, refineryIconSVG } from './icons.js?v=14';
+} from './economy.js?v=15';
+import { loadState, saveState, resetState, logEvent, getTool, ownedModels } from './state.js?v=15';
+import { randomSeed, sha256Hex, makeRoller, weightedPick } from './rng.js?v=15';
+import { toolIconSVG, boxIconSVG, refineryIconSVG } from './icons.js?v=15';
 
 const RARITY_RANK = { common: 0, rare: 1, epic: 2, mystic: 3 };
 let state = loadState();
 let marketFilter = 'common'; // view-only, not persisted — which rarity tab is open
+
+// Box-opening had a whole staged animation; everything else (repair, fuse, reforge) used to
+// resolve silently. render() rebuilds tool cards from scratch every call (including the 1s
+// interval tick below), so a persistent CSS class won't do — this is a short-lived hint,
+// read once by renderToolCard and stale after 700ms, that says "this tool just did X, play
+// the one-shot animation for it" without needing to touch how render() itself works.
+let lastToolAction = null; // { toolId, type: 'repair-success' | 'repair-fail' | 'pop', at }
+const lastBalanceText = {}; // id -> last-rendered string, so pills only pulse on real change
 
 function roll() {
   return crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296;
@@ -61,12 +69,27 @@ function activeShiftFor(toolId) {
 
 // ---------- rendering ----------
 
+// Every action in the game touches at least one currency — this is the one feedback beat
+// that's free to add everywhere at once. Only pulses on an actual value change (tracked via
+// lastBalanceText), so the 1s interval tick in render() doesn't pulse idle, unchanged pills.
+function updateBalance(id, value) {
+  const text = String(value);
+  const el = document.getElementById(id);
+  el.textContent = text;
+  if (lastBalanceText[id] !== undefined && lastBalanceText[id] !== text) {
+    el.classList.remove('pulse');
+    void el.offsetWidth; // force a reflow so re-adding the class restarts the animation
+    el.classList.add('pulse');
+  }
+  lastBalanceText[id] = text;
+}
+
 function render() {
-  document.getElementById('ore-balance').textContent = state.ore;
-  document.getElementById('usdc-balance').textContent = state.usdc;
-  document.getElementById('slp-balance').textContent = state.slp;
-  document.getElementById('axs-balance').textContent = state.axs.toFixed(2);
-  document.getElementById('baxs-balance').textContent = state.baxs.toFixed(2);
+  updateBalance('ore-balance', state.ore);
+  updateBalance('usdc-balance', state.usdc);
+  updateBalance('slp-balance', state.slp);
+  updateBalance('axs-balance', state.axs.toFixed(2));
+  updateBalance('baxs-balance', state.baxs.toFixed(2));
   renderCodex();
   renderTools();
   renderNodes();
@@ -149,8 +172,14 @@ function renderToolCard(tool) {
   }
 
   const tooltip = `${tool.model} — ${TRAITS[tool.model] || ''}`;
+  let feedbackClass = '';
+  if (lastToolAction && lastToolAction.toolId === tool.id && Date.now() - lastToolAction.at < 700) {
+    feedbackClass = lastToolAction.type === 'repair-success' ? 'repair-success'
+      : lastToolAction.type === 'repair-fail' ? 'repair-fail'
+      : 'tile-pop';
+  }
   return `
-    <div class="item-tile ${tool.rarity}">
+    <div class="item-tile ${tool.rarity} ${feedbackClass}">
       ${statusBadge}
       <div class="icon-wrap ${tool.rarity}" title="${tooltip}">${toolIconSVG(tool.model, tool.rarity, 28)}</div>
       <div class="durbar-wrap" style="width:100%">
@@ -406,6 +435,7 @@ function doRepair(toolId) {
   state.slp -= cost;
   const { tool: next, success } = rollRepair(tool, false, roll());
   Object.assign(tool, next);
+  lastToolAction = { toolId, type: success ? 'repair-success' : 'repair-fail', at: Date.now() };
   logEvent(state, success
     ? `Repair succeeded on ${tool.model}: full ${tool.durability}/${tool.maxDurability}. (-${cost} SLP)`
     : `Repair FAILED on ${tool.model}: ${tool.durability}/${tool.maxDurability} (maxDurability dropped 2). (-${cost} SLP)`);
@@ -486,6 +516,7 @@ function doFuseConfirm(toolId) {
   state.baxs -= feeAXS;
   Object.assign(tool, next);
   state.tools = state.tools.filter((t) => t.id !== fuel.id);
+  lastToolAction = { toolId: tool.id, type: 'pop', at: Date.now() };
   const axsNote = feeAXS > 0 ? `, -${feeAXS} bAXS` : '';
   logEvent(state, `Fused ${fuel.model} into ${tool.model}: restored to ${tool.durability}/${tool.maxDurability}. (-${fee} SLP${axsNote})`);
   closeModal();
@@ -540,6 +571,7 @@ function doReforgeConfirm(toolId) {
   state.tools = state.tools.filter((t) => t.id !== tool.id && t.id !== partner.id);
   const newTool = { ...minted, id: state.nextToolId++ };
   state.tools.push(newTool);
+  lastToolAction = { toolId: newTool.id, type: 'pop', at: Date.now() };
   logEvent(state, `Reforged ${tool.model} + ${partner.model} → ${outcome.toUpperCase()}: ${newTool.model} (${newTool.durability}/${newTool.maxDurability}).`);
   closeModal();
   saveState(state);

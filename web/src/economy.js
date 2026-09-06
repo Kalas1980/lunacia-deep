@@ -1,7 +1,7 @@
 // Pure functions implementing docs/DESIGN.md §2.4, §2.5, §4, §6, §7.
 // No DOM, no I/O — importable directly by test/economy.test.js.
 
-import { TIER, WORN_THRESHOLD, MODELS, FUSION_RESTORE_FRACTION, fusionFee, fusionFeeAXS, REFINERY_MULT } from './data.js?v=14';
+import { TIER, WORN_THRESHOLD, MODELS, FUSION_RESTORE_FRACTION, fusionFee, fusionFeeAXS, REFINERY_MULT } from './data.js?v=15';
 
 export function clamp(x, lo, hi) {
   return Math.max(lo, Math.min(hi, x));
