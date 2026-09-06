@@ -225,6 +225,7 @@ button.pill-btn { padding: 5px 10px; font-size: 0.78rem; border-radius: 999px; }
 .item-tile .durbar-track { width: 100%; }
 .item-tile .durbar-label { justify-content: center; gap: 6px; }
 .item-tile .tile-actions { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-top: 2px; }
+.fuse-row-name { font-weight: 700; font-size: 0.85rem; margin: 2px 0 0; text-align: center; }
 
 /* ---- One-shot feedback on the tile itself: repair (§4.2's "most emotionally expensive
    event") used to resolve with zero visual signal beyond the durability bar's own width

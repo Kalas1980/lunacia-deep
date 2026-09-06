@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Lunacia Deep — Prototype</title>
-  <link rel="stylesheet" href="style.css?v=21" />
+  <link rel="stylesheet" href="style.css?v=22" />
 </head>
 <body>
   <header class="topbar hero-banner">
@@ -42,6 +42,7 @@
       <nav class="subview-nav">
         <button class="subview-tab active" data-view-action="switch-subview" data-subview="nodes">Mine</button>
         <button class="subview-tab" data-view-action="switch-subview" data-subview="inventory">Inventory</button>
+        <button class="subview-tab" data-view-action="switch-subview" data-subview="fuse">Fuse <span id="fuse-count" class="muted"></span></button>
       </nav>
 
       <div class="subview active" id="subview-nodes">
@@ -55,6 +56,19 @@
         <section class="panel">
           <h2>Inventory</h2>
           <div id="tool-list" class="tool-list"></div>
+        </section>
+      </div>
+
+      <div class="subview" id="subview-fuse">
+        <section class="panel">
+          <h2>Fuse &amp; Bond <span class="muted small">§4.5</span></h2>
+          <p class="muted small">
+            A tool at 0 durability is Broken — SLP repair won't touch it at any price. The
+            only way back is Fusion: burn a same-rarity tool as fuel for a deterministic
+            partial restore. Epic/Mystic also bond a small AXS toll into non-transferable
+            bAXS on top of the SLP fee, to keep AXS scarce.
+          </p>
+          <div id="fuse-list" class="tool-list"></div>
         </section>
       </div>
     </section>
@@ -114,6 +128,6 @@
 
   <div id="modal-root"></div>
 
-  <script type="module" src="src/main.js?v=21"></script>
+  <script type="module" src="src/main.js?v=22"></script>
 </body>
 </html>

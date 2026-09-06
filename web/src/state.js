@@ -1,7 +1,7 @@
 // Minimal game state + localStorage persistence. No framework — plain objects, one
 // module-level store, explicit save() calls. Fine at this scale; a real client would
 // swap this for whatever the chosen frontend stack uses, per docs/DESIGN.md §10.
-import { MAX_DURABILITY_START } from './data.js?v=21';
+import { MAX_DURABILITY_START } from './data.js?v=22';
 
 const STORAGE_KEY = 'lunacia-deep-prototype-v1';
 

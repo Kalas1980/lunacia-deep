@@ -6,14 +6,14 @@
 import {
   RARITIES, MODELS, TRAITS, TIER, BOXES, NODES, DEMO_SHIFT_MS, fusionFee, fusionFeeAXS,
   SMELTS, REFINERY_MULT, REFINERY_MAX_DURABILITY, refineryRepairCostSLP, refineryRepairCostOre,
-} from './data.js?v=21';
+} from './data.js?v=22';
 import {
   repairCostSLP, repairSuccessChance, rollRepair, isBroken, isWorn,
   fusionRepair, reforgeOdds, reforge, shiftYield, drainDurability, pickModel, bestRefineryMult,
-} from './economy.js?v=21';
-import { loadState, saveState, resetState, logEvent, getTool, ownedModels } from './state.js?v=21';
-import { randomSeed, sha256Hex, makeRoller, weightedPick } from './rng.js?v=21';
-import { toolIconSVG, boxIconSVG, refineryIconSVG } from './icons.js?v=21';
+} from './economy.js?v=22';
+import { loadState, saveState, resetState, logEvent, getTool, ownedModels } from './state.js?v=22';
+import { randomSeed, sha256Hex, makeRoller, weightedPick } from './rng.js?v=22';
+import { toolIconSVG, boxIconSVG, refineryIconSVG } from './icons.js?v=22';
 
 const RARITY_RANK = { common: 0, rare: 1, epic: 2, mystic: 3 };
 let state = loadState();
@@ -107,6 +107,7 @@ function render() {
   updateBalance('baxs-balance', state.baxs.toFixed(2));
   renderCodex();
   renderTools();
+  renderFuseList();
   renderNodes();
   renderBoxes();
   renderRefinery();
@@ -145,6 +146,42 @@ function renderTools() {
     return;
   }
   list.innerHTML = state.tools.map(renderToolCard).join('');
+}
+
+// Fuse used to only be reachable as a button buried on a Broken tool's own Inventory card
+// (or a node's site screen) — this is the same action, just surfaced as its own Game
+// sub-view so "I have something to fix" is visible without hunting for it.
+function renderFuseList() {
+  const list = document.getElementById('fuse-list');
+  const broken = state.tools.filter((t) => isBroken(t));
+  document.getElementById('fuse-count').textContent = broken.length > 0 ? `(${broken.length})` : '';
+
+  if (broken.length === 0) {
+    list.innerHTML = '<p class="muted small">No Broken tools right now — durability\'s holding up.</p>';
+    return;
+  }
+
+  list.innerHTML = broken.map((tool) => {
+    const fee = fusionFee(tool.rarity);
+    const feeAXS = fusionFeeAXS(tool.rarity);
+    const fuelCount = state.tools.filter((t) => t.id !== tool.id && t.rarity === tool.rarity && !isBroken(t)).length;
+    const axsNote = feeAXS > 0 ? ` + ${feeAXS} AXS→bAXS` : '';
+    let feedbackClass = '';
+    if (lastToolAction && lastToolAction.toolId === tool.id && Date.now() - lastToolAction.at < 700) {
+      feedbackClass = 'tile-pop';
+    }
+    return `
+      <div class="item-tile ${tool.rarity} ${feedbackClass}">
+        <span class="status-badge tag status-broken">Broken</span>
+        <div class="icon-wrap ${tool.rarity} broken-icon" title="${tool.model}">${toolIconSVG(tool.model, tool.rarity, 28)}</div>
+        <p class="fuse-row-name">${tool.model}</p>
+        <p class="muted small">Fee: ${fee} SLP${axsNote}</p>
+        <p class="muted small">${fuelCount} ${tool.rarity} tool${fuelCount === 1 ? '' : 's'} available as fuel</p>
+        <div class="tile-actions">
+          <button data-action="fuse" data-tool="${tool.id}" class="danger pill-btn" ${fuelCount === 0 ? 'disabled' : ''} title="Fusion Repair, §4.5">Fuse</button>
+        </div>
+      </div>`;
+  }).join('');
 }
 
 function renderToolCard(tool) {
@@ -630,7 +667,7 @@ function openFusionModal(toolId) {
     </div>`);
 }
 
-function doFuseConfirm(toolId) {
+async function doFuseConfirm(toolId) {
   const tool = getTool(state, toolId);
   const fuelId = Number(document.getElementById('fuel-select').value);
   const fuel = getTool(state, fuelId);
@@ -653,6 +690,20 @@ function doFuseConfirm(toolId) {
     render();
     return;
   }
+
+  // Fusion used to resolve silently the instant you clicked — boxes and smelting both get a
+  // beat before the reveal, this didn't. Reuses the exact same opening/reveal machinery,
+  // driven by the tool's own rarity (unchanged by Fusion, §4.5) — Common/Rare stay quick,
+  // Epic/Mystic get the charged pre-reveal boxes already use for those tiers.
+  const fuelModel = fuel.model;
+  const dramaClass = tool.rarity !== 'common' && tool.rarity !== 'rare' ? tool.rarity : '';
+  showModal(`
+    <div class="opening-stage">
+      <div class="opening-icon ${dramaClass}">${toolIconSVG(tool.model, tool.rarity, 40)}</div>
+      <p class="opening-label">Fusing ${fuelModel} into ${tool.model}...</p>
+    </div>`);
+  await sleep(OPENING_DURATION_MS[tool.rarity]);
+
   const { tool: next } = fusionRepair(tool, fuel);
   state.slp -= fee;
   if (baxsShortfall > 0) {
@@ -664,8 +715,16 @@ function doFuseConfirm(toolId) {
   state.tools = state.tools.filter((t) => t.id !== fuel.id);
   lastToolAction = { toolId: tool.id, type: 'pop', at: Date.now() };
   const axsNote = feeAXS > 0 ? `, -${feeAXS} bAXS` : '';
-  logEvent(state, `Fused ${fuel.model} into ${tool.model}: restored to ${tool.durability}/${tool.maxDurability}. (-${fee} SLP${axsNote})`);
-  closeModal();
+  logEvent(state, `Fused ${fuelModel} into ${tool.model}: restored to ${tool.durability}/${tool.maxDurability}. (-${fee} SLP${axsNote})`);
+
+  showModal(`
+    <div class="reveal-stage">
+      <div class="reveal-glow ${tool.rarity}" title="${tool.model}">${toolIconSVG(tool.model, tool.rarity, 44)}</div>
+      <span class="tag ${tool.rarity}">Restored</span>
+    </div>
+    <p class="muted small" style="text-align:center;">${tool.model} is back to ${tool.durability}/${tool.maxDurability}.</p>
+    <div class="card-actions"><button data-action="close-modal" class="primary">Nice</button></div>`);
+
   saveState(state);
   render();
 }
