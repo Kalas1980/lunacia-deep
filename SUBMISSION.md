@@ -1,9 +1,9 @@
 # Axie Vibeathon — Round 1 submission draft
 
-Status: **draft, not registered.** Fill in the `[ ]` fields and register at
-vibeathon.axieinfinity.ai before **September 7, 2026** if we decide to go — Round 1 runs
-September 8–21. Everything below is written to be copy-paste ready once that decision is
-made.
+Status: **going for it.** Register at vibeathon.axieinfinity.ai by **September 7, 2026,
+13:00 UTC** — that's just the registration deadline, not the submission one. The actual
+submission window is **September 8–21, 13:00 UTC**, so there's real runway after
+registering to finish anything still open below.
 
 ---
 
@@ -55,16 +55,16 @@ repair, and Fusion Repair, end to end.
 No wallet, no blockchain, no login. Everything resets with the **Reset** button top-right.
 
 ### Playable game link
-`[ ]` — fill in after hosting (GitHub Pages / Vercel / Netlify; static files only, see
-`web/`).
+https://kalas1980.github.io/lunacia-deep/ — GitHub Pages, deployed via Actions on every
+push to `main` (`.github/workflows/deploy-pages.yml`). Publishes only `web/`.
 
 ### Thumbnail image
 `[ ]` — not yet created. Candidate: a durability bar mid-drain next to the "Broken" tag,
 since that's the mechanic this submission is actually about.
 
 ### Repository link
-`[ ]` — this repo. Can be made private per Vibeathon rules if we don't want the full
-`docs/DESIGN.md` business plan public pre-launch; the judges only need read access.
+https://github.com/Kalas1980/lunacia-deep — public. `docs/DESIGN.md` (the full tokenomics
+business plan) is visible in the repo; only `web/` is what's actually deployed and playable.
 
 ### Fallback demo video
 `[ ]` — record a ~90s screen capture of the first-play flow above once hosted, in case the
