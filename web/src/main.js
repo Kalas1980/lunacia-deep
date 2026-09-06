@@ -6,14 +6,14 @@
 import {
   RARITIES, MODELS, TRAITS, TIER, BOXES, NODES, DEMO_SHIFT_MS, fusionFee, fusionFeeAXS,
   SMELTS, REFINERY_MULT, REFINERY_MAX_DURABILITY, refineryRepairCostSLP, refineryRepairCostOre,
-} from './data.js?v=20';
+} from './data.js?v=21';
 import {
   repairCostSLP, repairSuccessChance, rollRepair, isBroken, isWorn,
   fusionRepair, reforgeOdds, reforge, shiftYield, drainDurability, pickModel, bestRefineryMult,
-} from './economy.js?v=20';
-import { loadState, saveState, resetState, logEvent, getTool, ownedModels } from './state.js?v=20';
-import { randomSeed, sha256Hex, makeRoller, weightedPick } from './rng.js?v=20';
-import { toolIconSVG, boxIconSVG, refineryIconSVG } from './icons.js?v=20';
+} from './economy.js?v=21';
+import { loadState, saveState, resetState, logEvent, getTool, ownedModels } from './state.js?v=21';
+import { randomSeed, sha256Hex, makeRoller, weightedPick } from './rng.js?v=21';
+import { toolIconSVG, boxIconSVG, refineryIconSVG } from './icons.js?v=21';
 
 const RARITY_RANK = { common: 0, rare: 1, epic: 2, mystic: 3 };
 let state = loadState();
@@ -243,6 +243,27 @@ function siteRowHTML(tool, rightSideHTML, extraIconClass = '') {
       </div>`;
 }
 
+// A generic, original crew critter — not Axie art. Real Axie art can't ship before the
+// Builders Program licence (docs/DESIGN.md Appendix A.5); this is the "your own miner art"
+// placeholder §A.4's RoninNftAdapter already plans for, applied to the UI a turn early.
+const CREW_CRITTER_SRC = 'assets/crew/miner-critter.png';
+
+// Rendered directly inside the scene background (site-scene), not the plain-list style
+// idle rows below it — the critter only appears for a genuinely active shift; a stopped
+// (Broken) tool shows alone, since nobody's actively operating a tool that can't mine.
+function sceneWorkerHTML(tool, statusHTML, showCritter) {
+  const broken = isBroken(tool);
+  return `
+    <div class="scene-worker ${broken ? 'broken' : ''}">
+      ${showCritter ? `<img class="scene-critter mining" src="${CREW_CRITTER_SRC}" alt="Crew" />` : ''}
+      <div class="icon-wrap ${tool.rarity} ${broken ? 'broken-icon' : ''} ${showCritter ? 'mining' : ''} scene-tool-icon" title="${tool.model}">${toolIconSVG(tool.model, tool.rarity, 26)}</div>
+      <div class="scene-worker-info">
+        <span class="scene-worker-name">${tool.model}</span>
+        ${statusHTML}
+      </div>
+    </div>`;
+}
+
 function buildNodeSiteHTML(nodeKey) {
   const node = NODES[nodeKey];
   const workingHere = state.activeShifts.filter((sh) => sh.nodeKey === nodeKey);
@@ -251,22 +272,21 @@ function buildNodeSiteHTML(nodeKey) {
   // whole point of tracking lastNodeKey in doSend.
   const stoppedHere = state.tools.filter((t) => isBroken(t) && t.lastNodeKey === nodeKey);
 
-  const workingRows = workingHere.map((sh) => {
+  const workingWorkers = workingHere.map((sh) => {
     const tool = getTool(state, sh.toolId);
     if (!tool) return '';
     const ready = Date.now() >= sh.startedAt + sh.durationMs;
-    return siteRowHTML(tool, ready
+    return sceneWorkerHTML(tool, ready
       ? `<button data-action="collect" data-tool="${tool.id}" class="primary pill-btn">Collect</button>`
-      : miningProgressBarHTML(sh),
-      ready ? '' : 'mining');
+      : miningProgressBarHTML(sh), true);
   }).join('');
 
-  const stoppedRows = stoppedHere.map((tool) => siteRowHTML(tool,
-    `<button data-action="fuse" data-tool="${tool.id}" class="danger pill-btn" title="Fusion Repair, §4.5">Fuse</button>`));
+  const stoppedWorkers = stoppedHere.map((tool) => sceneWorkerHTML(tool,
+    `<button data-action="fuse" data-tool="${tool.id}" class="danger pill-btn" title="Fusion Repair, §4.5">Fuse</button>`, false));
 
   const isEligible = (t) => !node.minRarity || RARITY_RANK[t.rarity] >= RARITY_RANK[node.minRarity];
-  // Broken tools are shown above (stoppedRows) if they stopped at THIS node, or just live in
-  // ordinary Inventory otherwise — either way they don't belong in "you can commit" too.
+  // Broken tools are shown above (stoppedWorkers) if they stopped at THIS node, or just live
+  // in ordinary Inventory otherwise — either way they don't belong in "you can commit" too.
   const idleEligible = state.tools.filter((t) => isEligible(t) && !isBroken(t) && !activeShiftFor(t.id));
   const idleRows = idleEligible.map((tool) => siteRowHTML(tool,
     `<button data-action="send" data-tool="${tool.id}" data-node="${nodeKey}" class="pill-btn">Commit to mine here</button>`));
@@ -274,21 +294,27 @@ function buildNodeSiteHTML(nodeKey) {
   const workingCount = workingHere.length + stoppedHere.length;
 
   return `
-    <img class="node-art site-art" src="${node.image}" alt="${node.name}" />
-    <h3>${node.name}</h3>
-    <p class="node-flavor">${node.flavor}</p>
-    <p class="node-req">Durability drain ${node.durabilityDrain}/shift · base ore ${node.oreBase} ·
-    ${node.minRarity ? `requires ${node.minRarity}+ tool` : 'any tool'}</p>
+    <div class="site-scene" style="background-image:url('${node.image}')">
+      <div class="site-scene-fade"></div>
+      <div class="site-scene-content">
+        <h3 class="site-scene-title">${node.name}</h3>
+        <div class="scene-workers">
+          ${workingCount ? workingWorkers + stoppedWorkers : '<p class="scene-empty-msg">Nobody working this node yet.</p>'}
+        </div>
+      </div>
+    </div>
+    <div class="site-panel">
+      <p class="node-flavor">${node.flavor}</p>
+      <p class="node-req">Durability drain ${node.durabilityDrain}/shift · base ore ${node.oreBase} ·
+      ${node.minRarity ? `requires ${node.minRarity}+ tool` : 'any tool'}</p>
 
-    <h4 class="site-section-head">Working here${workingCount ? ` (${workingCount})` : ''}</h4>
-    ${workingCount ? workingRows + stoppedRows : '<p class="muted small">Nobody working this node yet.</p>'}
+      <h4 class="site-section-head">Idle tools you can commit</h4>
+      ${idleEligible.length === 0
+        ? '<p class="muted small">No eligible idle tools — repair, Fuse a Broken one, or open a blind box.</p>'
+        : idleRows}
 
-    <h4 class="site-section-head">Idle tools you can commit</h4>
-    ${idleEligible.length === 0
-      ? '<p class="muted small">No eligible idle tools — repair, Fuse a Broken one, or open a blind box.</p>'
-      : idleRows}
-
-    <div class="card-actions"><button data-action="close-modal" class="primary">Close</button></div>`;
+      <div class="card-actions"><button data-action="close-modal" class="primary">Close</button></div>
+    </div>`;
 }
 
 function openNodeSite(nodeKey) {

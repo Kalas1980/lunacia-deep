@@ -368,10 +368,41 @@ button.pill-btn { padding: 5px 10px; font-size: 0.78rem; border-radius: 999px; }
 .modal-icon { display: inline-flex; flex-shrink: 0; }
 .modal-icon img { display: block; }
 
-/* ---- Node site screen: a wider modal reusing the scene art, "who's here" / "who can
-   commit" split instead of the plain flavor-text card it's opened from. ---- */
-.modal.site-view { max-width: 620px; }
-.site-view .site-art { width: calc(100% + 40px); margin: -20px -20px 12px; height: 180px; }
+/* ---- Node site screen: the quarry/mineshaft art IS the background, not a header
+   thumbnail — crew critters stand directly in the scene, "idle tools you can commit"
+   lives in a separate panel below it since that's inventory management, not the scene. ---- */
+.modal.site-view { max-width: 640px; padding: 0; overflow: hidden; }
+.site-scene {
+  position: relative; min-height: 280px; background-size: cover; background-position: center;
+  display: flex; align-items: flex-end; padding: 18px;
+}
+.site-scene-fade {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(11,15,24,0.15) 0%, rgba(11,15,24,0.55) 55%, rgba(11,15,24,0.92) 100%);
+}
+.site-scene-content { position: relative; width: 100%; }
+.site-scene-title { margin: 0 0 10px; text-shadow: 0 2px 6px rgba(0,0,0,0.8); }
+.scene-workers { display: flex; flex-wrap: wrap; gap: 14px; }
+.scene-empty-msg { color: #cbd5e1; text-shadow: 0 2px 6px rgba(0,0,0,0.8); font-size: 0.9rem; }
+.scene-worker {
+  display: flex; align-items: center; gap: 8px; background: rgba(11,15,24,0.55);
+  border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 8px 12px;
+  backdrop-filter: blur(2px);
+}
+.scene-critter { width: 40px; height: 40px; object-fit: contain; flex-shrink: 0; }
+.scene-critter.mining { animation: critterBounce 0.9s ease-in-out infinite; }
+@keyframes critterBounce {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-5px) rotate(3deg); }
+}
+.scene-tool-icon { width: 34px; height: 34px; flex-shrink: 0; }
+.scene-worker-info { display: flex; flex-direction: column; gap: 3px; min-width: 110px; }
+.scene-worker-name { font-weight: 700; font-size: 0.85rem; color: var(--text); }
+.scene-worker.broken .scene-worker-name { color: var(--broken); }
+.scene-worker .shift-bar-wrap { width: 110px; }
+
+.site-panel { padding: 18px 20px 20px; }
+.site-panel .node-flavor { margin-top: 0; }
 .site-section-head { margin: 16px 0 8px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
 .site-row {
   display: flex; align-items: center; gap: 10px; padding: 8px 0;

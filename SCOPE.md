@@ -65,7 +65,10 @@ out, and why. Read this before assuming a gap is a bug.
   **30 tool models** + **3 blind-box crates** are AI-generated (Higgsfield/Recraft,
   pixel-art style, backgrounds removed, `web/assets/tools/` and `web/assets/boxes/`), plus
   the **2 mining-node scenes** (`web/assets/nodes/`, full-scene JPEGs, no background removal
-  needed) and one hero banner (`web/assets/ui/banner.jpg`). Refinery NFTs (§5.1) deliberately
+  needed), one hero banner (`web/assets/ui/banner.jpg`), and one **original crew critter**
+  (`web/assets/crew/miner-critter.png`) standing in for an Axie in the node site screen —
+  not Axie art, a generic non-derivative creature, per the same Appendix A.5 constraint.
+  Refinery NFTs (§5.1) deliberately
   stay hand-drawn SVG, not raster — a simple rarity-tinted furnace icon
   (`refineryIconSVG` in `web/src/icons.js`) rather than spending generation credits on a
   fourth art pass for an abstract "efficiency booster" concept that doesn't need a scene or
