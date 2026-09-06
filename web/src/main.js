@@ -6,14 +6,14 @@
 import {
   RARITIES, MODELS, TRAITS, TIER, BOXES, NODES, DEMO_SHIFT_MS, fusionFee, fusionFeeAXS,
   SMELTS, REFINERY_MULT, REFINERY_MAX_DURABILITY, refineryRepairCostSLP, refineryRepairCostOre,
-} from './data.js?v=19';
+} from './data.js?v=20';
 import {
   repairCostSLP, repairSuccessChance, rollRepair, isBroken, isWorn,
   fusionRepair, reforgeOdds, reforge, shiftYield, drainDurability, pickModel, bestRefineryMult,
-} from './economy.js?v=19';
-import { loadState, saveState, resetState, logEvent, getTool, ownedModels } from './state.js?v=19';
-import { randomSeed, sha256Hex, makeRoller, weightedPick } from './rng.js?v=19';
-import { toolIconSVG, boxIconSVG, refineryIconSVG } from './icons.js?v=19';
+} from './economy.js?v=20';
+import { loadState, saveState, resetState, logEvent, getTool, ownedModels } from './state.js?v=20';
+import { randomSeed, sha256Hex, makeRoller, weightedPick } from './rng.js?v=20';
+import { toolIconSVG, boxIconSVG, refineryIconSVG } from './icons.js?v=20';
 
 const RARITY_RANK = { common: 0, rare: 1, epic: 2, mystic: 3 };
 let state = loadState();
@@ -798,6 +798,24 @@ document.getElementById('reset-btn').addEventListener('click', () => {
   if (!confirm('Wipe local save and start over?')) return;
   state = resetState();
   render();
+});
+
+// Codex/Boxes/Refinery/Marketplace/Log are separate screens now, not panels on one long
+// page — plain show/hide via .active, the DOM itself is the state, nothing to persist.
+document.getElementById('view-nav').addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-view-action="switch-view"]');
+  if (!btn) return;
+  document.querySelectorAll('.view-tab').forEach((t) => t.classList.toggle('active', t === btn));
+  document.querySelectorAll('.view').forEach((v) => v.classList.toggle('active', v.dataset.viewPanel === btn.dataset.view));
+});
+
+// Inventory as a sub-view under Game (Mine), same show/hide pattern one level deeper.
+document.querySelector('.subview-nav').addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-view-action="switch-subview"]');
+  if (!btn) return;
+  document.querySelectorAll('.subview-tab').forEach((t) => t.classList.toggle('active', t === btn));
+  document.getElementById('subview-nodes').classList.toggle('active', btn.dataset.subview === 'nodes');
+  document.getElementById('subview-inventory').classList.toggle('active', btn.dataset.subview === 'inventory');
 });
 
 setInterval(render, 1000); // countdown ticks + collect-button availability

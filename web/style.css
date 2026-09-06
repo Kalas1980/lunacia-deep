@@ -99,6 +99,33 @@ button.pill-btn { padding: 5px 10px; font-size: 0.78rem; border-radius: 999px; }
 }
 .layout .panel.span-2 { grid-column: 1 / -1; }
 
+/* ---- Top-level view nav: Game / Codex / Boxes / Refinery / Marketplace / Log are
+   separate screens now, not one long page — only one .view is visible at a time. ---- */
+.view-nav {
+  display: flex; gap: 4px; padding: 10px 22px; background: var(--panel);
+  border-bottom: 1px solid var(--border); overflow-x: auto;
+}
+.view-tab {
+  background: transparent; border: 1px solid transparent; color: var(--muted);
+  padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 0.9rem;
+  white-space: nowrap; cursor: pointer;
+}
+.view-tab:hover { background: var(--panel-2); color: var(--text); }
+.view-tab.active { background: var(--accent-gradient); color: #241505; }
+
+.view { display: none; grid-column: 1 / -1; }
+.view.active { display: block; }
+
+/* Game view's own Mine/Inventory split — "inventory as a sub view under the game" */
+.subview-nav { display: flex; gap: 8px; margin-bottom: 14px; }
+.subview-tab {
+  background: var(--panel-2); border: 1px solid var(--border); color: var(--muted);
+  padding: 6px 18px; border-radius: 999px; font-weight: 600; font-size: 0.85rem; cursor: pointer;
+}
+.subview-tab.active { background: var(--accent); color: #241505; border-color: var(--accent); }
+.subview { display: none; }
+.subview.active { display: block; }
+
 .panel {
   background: var(--panel);
   border: 1px solid var(--border);
