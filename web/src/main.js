@@ -6,14 +6,14 @@
 import {
   RARITIES, MODELS, TRAITS, TIER, BOXES, NODES, DEMO_SHIFT_MS, fusionFee, fusionFeeAXS,
   SMELTS, REFINERY_MULT, REFINERY_MAX_DURABILITY, refineryRepairCostSLP, refineryRepairCostOre,
-} from './data.js?v=22';
+} from './data.js?v=23';
 import {
   repairCostSLP, repairSuccessChance, rollRepair, isBroken, isWorn,
   fusionRepair, reforgeOdds, reforge, shiftYield, drainDurability, pickModel, bestRefineryMult,
-} from './economy.js?v=22';
-import { loadState, saveState, resetState, logEvent, getTool, ownedModels } from './state.js?v=22';
-import { randomSeed, sha256Hex, makeRoller, weightedPick } from './rng.js?v=22';
-import { toolIconSVG, boxIconSVG, refineryIconSVG } from './icons.js?v=22';
+} from './economy.js?v=23';
+import { loadState, saveState, resetState, logEvent, getTool, ownedModels } from './state.js?v=23';
+import { randomSeed, sha256Hex, makeRoller, weightedPick } from './rng.js?v=23';
+import { toolIconSVG, boxIconSVG, refineryIconSVG } from './icons.js?v=23';
 
 const RARITY_RANK = { common: 0, rare: 1, epic: 2, mystic: 3 };
 let state = loadState();
@@ -67,7 +67,10 @@ function miningProgressBarHTML(shift) {
   return `
     <div class="shift-bar-wrap">
       <div class="shift-bar-track"><div class="shift-bar-fill" style="width:${pct}%"></div></div>
-      <span class="muted small">⏱ ${fmtTime(remaining)}</span>
+      <div class="shift-bar-footer">
+        <span class="muted small">⏱ ${fmtTime(remaining)}</span>
+        <button data-action="stop" data-tool="${shift.toolId}" class="ghost-btn tiny" title="Pull this tool off the node so you can send it somewhere else — mining otherwise auto-continues forever">Stop</button>
+      </div>
     </div>`;
 }
 
@@ -100,6 +103,7 @@ function updateBalance(id, value) {
 }
 
 function render() {
+  autoResolveShifts(); // catch up on anything that finished since the last render, first
   updateBalance('ore-balance', state.ore);
   updateBalance('usdc-balance', state.usdc);
   updateBalance('slp-balance', state.slp);
@@ -197,11 +201,10 @@ function renderToolCard(tool) {
   const durPct = Math.max(0, Math.min(100, tool.durability));
 
   let actions = '';
-  const shiftReady = shift && Date.now() >= shift.startedAt + shift.durationMs;
+  // render() resolves any due shift via autoResolveShifts() before this ever runs, so a
+  // shift seen here is always still genuinely in progress — no separate "ready" state.
   if (shift) {
-    actions = shiftReady
-      ? `<button data-action="collect" data-tool="${tool.id}" class="primary pill-btn">Collect</button>`
-      : miningProgressBarHTML(shift);
+    actions = miningProgressBarHTML(shift);
   } else if (broken) {
     actions = `<button data-action="fuse" data-tool="${tool.id}" class="danger pill-btn" title="Fusion Repair, §4.5">Fuse</button>`;
   } else if (worn) {
@@ -232,7 +235,7 @@ function renderToolCard(tool) {
   return `
     <div class="item-tile ${tool.rarity} ${feedbackClass}">
       ${statusBadge}
-      <div class="icon-wrap ${tool.rarity} ${broken ? 'broken-icon' : ''} ${shift && !shiftReady ? 'mining' : ''}" title="${tooltip}">${toolIconSVG(tool.model, tool.rarity, 28)}</div>
+      <div class="icon-wrap ${tool.rarity} ${broken ? 'broken-icon' : ''} ${shift ? 'mining' : ''}" title="${tooltip}">${toolIconSVG(tool.model, tool.rarity, 28)}</div>
       <div class="durbar-wrap" style="width:100%">
         <div class="durbar-track"><div class="durbar-fill ${durClass}" style="width:${durPct}%"></div></div>
         <div class="durbar-label"><span>${tool.durability}/${tool.maxDurability}</span></div>
@@ -304,18 +307,17 @@ function sceneWorkerHTML(tool, statusHTML, showCritter) {
 function buildNodeSiteHTML(nodeKey) {
   const node = NODES[nodeKey];
   const workingHere = state.activeShifts.filter((sh) => sh.nodeKey === nodeKey);
-  // A tool that broke while working here has no active shift anymore (doCollect always
+  // A tool that broke while working here has no active shift anymore (resolveShift always
   // clears it), but it should still read as "stopped here", not just vanish — that's the
   // whole point of tracking lastNodeKey in doSend.
   const stoppedHere = state.tools.filter((t) => isBroken(t) && t.lastNodeKey === nodeKey);
 
+  // Same as renderToolCard: autoResolveShifts() already cleared anything due before this
+  // ever runs, so every shift found here is still genuinely in progress.
   const workingWorkers = workingHere.map((sh) => {
     const tool = getTool(state, sh.toolId);
     if (!tool) return '';
-    const ready = Date.now() >= sh.startedAt + sh.durationMs;
-    return sceneWorkerHTML(tool, ready
-      ? `<button data-action="collect" data-tool="${tool.id}" class="primary pill-btn">Collect</button>`
-      : miningProgressBarHTML(sh), true);
+    return sceneWorkerHTML(tool, miningProgressBarHTML(sh), true);
   }).join('');
 
   const stoppedWorkers = stoppedHere.map((tool) => sceneWorkerHTML(tool,
@@ -573,11 +575,20 @@ function bestIdleEligibleTool(nodeKey, excludeToolId) {
   return candidates.reduce((best, t) => (RARITY_RANK[t.rarity] > RARITY_RANK[best.rarity] ? t : best));
 }
 
-function doCollect(toolId) {
-  const tool = getTool(state, toolId);
-  const shift = activeShiftFor(toolId);
-  if (!tool || !shift) return;
-  if (Date.now() < shift.startedAt + shift.durationMs) return;
+// The whole point of idle mining is that the tool works for the player, not the other way
+// around — a "Collect" button the player has to click every single cycle just to keep a
+// tool doing what it's already doing is the user working for the tool. So this isn't a
+// click handler: it's called at the top of every render() and silently resolves whatever
+// shift(s) came due since the last check, then immediately re-commits the same tool to the
+// same node — real shift length every time (§1), never compressed to instant, only the
+// demo clock runs fast. The only manual exits are Stop (below) and a tool going Broken.
+//
+// `ponytail:` only resolves one cycle per catch-up, even after a long absence — no
+// retroactive credit for missed cycles while the tab was closed. Real offline-progress
+// accounting is a Phase-2 concern (§11), not something to fake here.
+function resolveShift(shift) {
+  const tool = getTool(state, shift.toolId);
+  if (!tool) return;
   const nodeKey = shift.nodeKey;
   const node = NODES[nodeKey];
   const refineryMult = bestRefineryMult(state.refineries);
@@ -585,7 +596,7 @@ function doCollect(toolId) {
   state.ore += ore;
   const drained = drainDurability(tool, node);
   Object.assign(tool, drained);
-  state.activeShifts = state.activeShifts.filter((sh) => sh.toolId !== toolId);
+  state.activeShifts = state.activeShifts.filter((sh) => sh.toolId !== tool.id);
   const boostNote = refineryMult > 1 ? ` (Refinery ×${refineryMult.toFixed(2)})` : '';
   logEvent(state, `${tool.model} finished at ${node.name}: +${ore} ore${boostNote}. Durability now ${tool.durability}/${tool.maxDurability}${isBroken(tool) ? ' — BROKEN, needs Fusion Repair' : ''}.`);
 
@@ -599,8 +610,28 @@ function doCollect(toolId) {
       replacement.lastNodeKey = nodeKey;
       logEvent(state, `${replacement.model} automatically sent to ${node.name} to replace the broken ${tool.model}.`);
     }
+  } else {
+    state.activeShifts.push({ toolId: tool.id, nodeKey, startedAt: Date.now(), durationMs: DEMO_SHIFT_MS[nodeKey] });
   }
+}
 
+function autoResolveShifts() {
+  const due = state.activeShifts.filter((sh) => Date.now() >= sh.startedAt + sh.durationMs);
+  if (due.length === 0) return;
+  due.forEach(resolveShift);
+  saveState(state);
+}
+
+// The explicit "change tools" exit — cancels the in-progress shift (no partial ore, no
+// partial drain; both only ever apply at resolution, so nothing is actually lost) and
+// leaves the tool idle, free to send anywhere.
+function doStop(toolId) {
+  const tool = getTool(state, toolId);
+  const shift = activeShiftFor(toolId);
+  if (!tool || !shift) return;
+  const node = NODES[shift.nodeKey];
+  state.activeShifts = state.activeShifts.filter((sh) => sh.toolId !== toolId);
+  logEvent(state, `${tool.model} pulled off ${node.name} — idle now.`);
   saveState(state);
   render();
 }
@@ -853,7 +884,7 @@ document.addEventListener('click', (e) => {
   const toolId = el.dataset.tool ? Number(el.dataset.tool) : null;
   if (action === 'send') doSend(toolId, el.dataset.node);
   else if (action === 'view-node') openNodeSite(el.dataset.node);
-  else if (action === 'collect') doCollect(toolId);
+  else if (action === 'stop') doStop(toolId);
   else if (action === 'repair') doRepair(toolId);
   else if (action === 'salvage') doSalvage(toolId);
   else if (action === 'fuse') openFusionModal(toolId);

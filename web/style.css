@@ -191,6 +191,8 @@ button.pill-btn { padding: 5px 10px; font-size: 0.78rem; border-radius: 999px; }
 .shift-bar-wrap { width: 100%; }
 .shift-bar-track { height: 8px; border-radius: 999px; background: #0b1220; border: 1px solid var(--border); overflow: hidden; }
 .shift-bar-fill { height: 100%; background: var(--accent-gradient); transition: width 1s linear; }
+.shift-bar-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 4px; }
+.ghost-btn.tiny { padding: 2px 9px; font-size: 0.7rem; border-radius: 999px; }
 [title] { cursor: help; }
 
 /* ---- Inventory: a grid of item tiles, not a stack of dashboard rows ---- */
@@ -400,7 +402,7 @@ button.pill-btn { padding: 5px 10px; font-size: 0.78rem; border-radius: 999px; }
 .scene-worker-info { display: flex; flex-direction: column; gap: 3px; min-width: 110px; }
 .scene-worker-name { font-weight: 700; font-size: 0.85rem; color: var(--text); }
 .scene-worker.broken .scene-worker-name { color: var(--broken); }
-.scene-worker .shift-bar-wrap { width: 110px; }
+.scene-worker .shift-bar-wrap { width: 150px; }
 
 .site-panel { padding: 18px 20px 20px; }
 .site-panel .node-flavor { margin-top: 0; }
@@ -412,7 +414,7 @@ button.pill-btn { padding: 5px 10px; font-size: 0.78rem; border-radius: 999px; }
 .site-row:last-child { border-bottom: none; }
 .site-row .icon-wrap { width: 40px; height: 40px; flex-shrink: 0; }
 .site-row-name { flex: 1; font-weight: 600; font-size: 0.9rem; }
-.site-row .shift-bar-wrap { flex: 0 0 120px; width: auto; }
+.site-row .shift-bar-wrap { flex: 0 0 150px; width: auto; }
 .site-row.broken .site-row-name { color: var(--broken); }
 
 /* ---- Reforge outcome bar: same visual language as box/smelt rarity bars, different
